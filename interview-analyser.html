@@ -1,0 +1,2005 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Interview Analyser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ebe9e4; --panel:#ffffff; --ink:#161616; --ink2:#5c5a56; --ink3:#8e8c87;
+  --line:#d6d3cc; --line2:#ebe9e4; --amber:#c8640a; --amber2:#f4ddc3; --amber3:#fbf0e3; --amber4:#8a4406;
+  --focus:#0f62fe; --row:#f6f5f1;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45}
+button,input,select{font:inherit;color:inherit}
+h1{font-size:20px;font-weight:600;margin:0;letter-spacing:-.01em}
+h2{font-size:14px;font-weight:600;margin:0 0 8px}
+p{margin:0}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:18px 24px 14px;border-bottom:1px solid var(--line);background:var(--bg);flex-wrap:wrap}
+.brand p{color:var(--ink2);margin-top:2px}
+.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{border:1px solid var(--ink);background:var(--panel);padding:8px 14px;border-radius:2px;cursor:pointer;line-height:1.2}
+.btn:hover{background:var(--line2)}
+.btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.primary:hover{background:#2e2e2e}
+.btn.ghost{border-color:var(--line);color:var(--ink2)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.file{position:relative;overflow:hidden}
+.btn.file input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.btn:focus-visible,select:focus-visible,input:focus-visible,canvas:focus-visible,.ctl:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.settings{padding:14px 24px 18px;border-bottom:1px solid var(--line);background:var(--panel);display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px 22px}
+.settings[hidden]{display:none}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{color:var(--ink2);font-size:13px}
+.field select,.field input[type=text]{padding:7px 9px;border:1px solid var(--line);border-radius:2px;background:#fff}
+.field .range{display:flex;align-items:center;gap:10px}
+.field input[type=range]{flex:1;accent-color:var(--ink)}
+.field .val{min-width:44px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2);font-size:13px}
+.field .hint{color:var(--ink3);font-size:12px;line-height:1.35}
+.field .mini{padding:4px 9px;font-size:12px}
+.work{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:0;min-height:calc(100vh - 70px)}
+.left{border-right:1px solid var(--line);padding:18px 20px 24px;position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;display:flex;flex-direction:column;gap:16px}
+.stage{position:relative;background:#111;border-radius:2px;overflow:hidden;min-height:120px;flex:none;display:flex;justify-content:center;align-items:flex-start}
+.stage video{display:block;max-width:100%;max-height:56vh;width:auto;height:auto}
+.stage canvas{position:absolute;left:0;top:0;pointer-events:none}
+.stage-note{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cfcac0;font-size:13px;padding:20px;text-align:center}
+.stage-note[hidden]{display:none}
+.tap{position:absolute;inset:0;width:100%;height:100%;background:rgba(0,0,0,.6);color:#fff;border:0;font-size:16px;cursor:pointer}
+.tap[hidden]{display:none}
+.ovl{position:absolute;right:6px;top:6px;font-size:11px;color:#fff;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.35);padding:2px 8px;border-radius:10px;cursor:pointer}
+.ovl[hidden]{display:none}
+.ovl.off{color:#cfcac0}
+.pick{position:absolute;right:6px;top:32px;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.pick[hidden]{display:none}
+.pick button{font-size:11px;color:#fff;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.35);padding:2px 8px;border-radius:10px;cursor:pointer}
+.pick button.set{background:rgba(200,100,10,.85);border-color:transparent}
+.stage.picking{cursor:crosshair}
+.stage.picking video{pointer-events:none}
+.pick-note{position:absolute;left:0;right:0;bottom:12px;text-align:center;color:#fff;font-size:12px;padding:4px 10px;background:rgba(0,0,0,.45);pointer-events:none}
+.pick-note[hidden]{display:none}
+.metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px 14px;flex:none}
+.metric{border-top:1px solid var(--line);padding-top:6px}
+.metric b{display:block;font-size:22px;font-weight:500;letter-spacing:-.01em;font-variant-numeric:tabular-nums;line-height:1.1}
+.metric b small{font-size:12px;color:var(--ink2);font-weight:400;margin-left:3px}
+.metric span{display:block;color:var(--ink2);font-size:12px;margin-top:2px}
+.status{display:flex;flex-direction:column;gap:6px;flex:none}
+.status .line{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--ink2)}
+.status .line em{font-style:normal;color:var(--ink);font-variant-numeric:tabular-nums;text-align:right}
+.progress{height:3px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--ink);width:0;transition:width .25s}
+.log{font-size:12px;color:var(--ink2);line-height:1.5;max-height:160px;overflow:auto;border-top:1px solid var(--line);padding-top:8px;white-space:pre-wrap;word-break:break-word;flex:none}
+.log .err{color:#a1260d}
+.right{display:flex;flex-direction:column;min-width:0}
+.timeline{position:sticky;top:0;z-index:2;background:var(--bg);padding:14px 24px 8px;border-bottom:1px solid var(--line)}
+.timeline canvas{display:block;width:100%;height:210px;cursor:crosshair;touch-action:none;border-radius:2px}
+.legend{display:flex;gap:16px;color:var(--ink2);font-size:12px;margin-top:6px;flex-wrap:wrap;align-items:center}
+.legend i{display:inline-block;width:12px;height:8px;vertical-align:-1px;margin-right:6px;border-radius:1px}
+.legend .k-rate i{background:var(--amber2);border-bottom:2px solid var(--amber)}
+.legend .k-base i{height:0;border-top:1px dashed var(--ink2);vertical-align:3px}
+.legend .k-blink i{width:2px;height:10px;background:var(--ink)}
+.legend .k-speak i{background:#dcdad4}
+.legend .k-strip i{background:linear-gradient(90deg,#e6e3dc,var(--amber4))}
+.legend .k-gap i{background:repeating-linear-gradient(135deg,#b9b5ad 0 2px,transparent 2px 5px)}
+.legend .zoom{margin-left:auto;display:flex;align-items:center;gap:6px}
+.legend select{padding:3px 6px;border:1px solid var(--line);border-radius:2px;background:#fff;font-size:12px}
+.key{padding:10px 24px 0;color:var(--ink3);font-size:12px;line-height:1.4;max-width:90ch}
+.key[hidden]{display:none}
+.transcript{padding:8px 24px 24px}
+.transcript .empty{color:var(--ink3);padding:40px 0;text-align:center}
+.row{display:grid;grid-template-columns:150px 72px minmax(0,1fr);gap:0 12px;align-items:start;padding:9px 6px 9px 4px;border-bottom:1px solid var(--line2);cursor:pointer;border-left:3px solid transparent}
+.row:hover{background:var(--row)}
+.row.current{background:var(--amber3)}
+.row.subject{border-left-color:var(--ink)}
+.row.control{border-left-style:double;border-left-width:3px}
+.row.off .text{color:var(--ink2);font-size:13px}
+.row.off .who{color:var(--ink3)}
+.row.unknown .who{color:var(--ink3);font-style:italic}
+.meta{display:flex;flex-direction:column;gap:2px;padding-top:3px}
+.meta .time{color:var(--ink3);font-size:12px;font-variant-numeric:tabular-nums}
+.meta .who{font-size:12px;color:var(--ink2)}
+.ctl{font-size:11px;color:var(--ink3);border:1px solid var(--line);background:#fff;padding:0 6px;border-radius:10px;cursor:pointer;align-self:flex-start;line-height:1.5;margin-top:2px}
+.ctl.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.row .text{font-size:15px;line-height:1.5;max-width:68ch;padding-top:1px}
+.row .text .w.on{background:var(--amber2);border-radius:2px}
+.row .chips{display:inline-flex;gap:6px;margin-left:10px;vertical-align:1px;flex-wrap:wrap;align-items:center}
+.chip{font-size:11px;color:var(--ink2);border:1px solid var(--line);padding:1px 6px;border-radius:10px;white-space:nowrap}
+.chip.hot{border-color:var(--amber);color:var(--amber)}
+.chip.flag{border-color:var(--amber4);color:var(--amber4)}
+.strip{display:flex;flex-direction:column;gap:5px;padding-top:4px}
+.bar{display:flex;align-items:center;gap:8px}
+.bar .num{width:30px;text-align:right;font-variant-numeric:tabular-nums;font-size:13px;color:var(--ink2)}
+.bar .num.none{color:var(--ink3)}
+.bar .track{position:relative;flex:1;height:14px}
+.bar .fill{position:absolute;left:0;top:3px;height:8px;background:#dcdad4}
+.bar .above{position:absolute;top:3px;height:8px;background:var(--amber)}
+.bar .base{position:absolute;top:0;width:1px;height:14px;background:var(--ink2)}
+.cells{display:flex;align-items:center;gap:8px}
+.cells .load{width:30px;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;color:var(--ink2)}
+.cells .load.none{color:var(--ink3)}
+.cells .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;flex:1}
+.cells .c{height:8px;border-radius:1px;background:#e6e3dc}
+.cells .c.na{background:transparent;border:1px solid var(--line)}
+.cells .c.z1{background:#f0c9a0}
+.cells .c.z2{background:var(--amber)}
+.cells .c.z3{background:var(--amber4)}
+.flags{padding:8px 24px 32px;border-top:1px solid var(--line)}
+.flags[hidden]{display:none}
+.flags p{color:var(--ink2);font-size:13px;max-width:70ch;margin-bottom:10px}
+.flag{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 0;border-bottom:1px solid var(--line2);font-size:13px}
+.flag .q{cursor:pointer}
+.flag .q:hover{background:var(--row)}
+.flag .t{color:var(--ink3);font-size:12px;font-variant-numeric:tabular-nums;margin-right:6px}
+.flag .kind{grid-column:1/-1;font-size:11px;color:var(--amber4)}
+.note{padding:16px 24px 40px;border-top:1px solid var(--line);color:var(--ink2);font-size:13px;max-width:70ch;line-height:1.5}
+.note b{font-weight:500;color:var(--ink)}
+@media (max-width:900px){
+  .work{grid-template-columns:1fr}
+  .left{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line);padding:14px 16px 18px}
+  .top{padding:14px 16px 12px}
+  .settings{padding:12px 16px 16px}
+  .timeline{padding:10px 16px 6px}
+  .timeline canvas{height:170px}
+  .key{padding:8px 12px 0}
+  .transcript{padding:6px 12px 20px}
+  .flags{padding:8px 12px 24px}
+  .flag{grid-template-columns:1fr}
+  .row{grid-template-columns:112px 58px 1fr;gap:0 8px}
+  .row .text{font-size:14px}
+  .bar .num,.cells .load{width:24px;font-size:11px}
+  .metrics{grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .metric b{font-size:18px}
+  .log{max-height:120px}
+}
+@media (prefers-reduced-motion:reduce){.progress i{transition:none}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <h1>Interview analyser</h1>
+    <p>Eyes, voice and words, set against the subject's own baseline.</p>
+  </div>
+  <div class="actions">
+    <label class="btn file">Choose video<input type="file" id="fileVideo" accept="video/*,audio/*"></label>
+    <button class="btn" id="btnCapture" title="Analyse a call live by capturing the screen, a window or a browser tab">Capture screen</button>
+    <button class="btn" id="btnCamera" title="Analyse live through this device's camera and microphone">Use camera</button>
+    <button class="btn primary" id="btnAnalyse" disabled>Analyse</button>
+    <button class="btn" id="btnStop" disabled>Stop</button>
+    <button class="btn" id="btnMark" disabled title="Everything the subject said before this moment becomes the baseline. Press it when the control questions are over, live or while scrubbing (shortcut: B).">Baseline ends here</button>
+    <button class="btn ghost" id="btnMarkClear" hidden title="Remove the baseline mark">Clear mark</button>
+    <button class="btn ghost" id="btnJson" disabled>Export JSON</button>
+    <button class="btn ghost" id="btnCsv" disabled>Export CSV</button>
+    <button class="btn ghost" id="btnSave" hidden>Save recording</button>
+    <button class="btn ghost" id="btnSettings" aria-expanded="false" aria-controls="settings">Settings</button>
+  </div>
+</header>
+
+<section class="settings" id="settings" hidden>
+  <div class="field">
+    <label for="baseMode">Baseline (control questions)</label>
+    <select id="baseMode">
+      <option value="30">First 30 s of the subject speaking</option>
+      <option value="60" selected>First 60 s of the subject speaking</option>
+      <option value="90">First 90 s of the subject speaking</option>
+      <option value="120">First 2 minutes of the subject speaking</option>
+      <option value="180">First 3 minutes of the subject speaking</option>
+      <option value="mark">Everything before the baseline mark</option>
+      <option value="manual">Only the lines I mark as control</option>
+    </select>
+    <span class="hint">Open with questions the subject can answer easily and truthfully. Every measure is read against those answers. Press "Baseline ends here" when the control questions are over, or mark individual lines with the control button in the transcript.</span>
+  </div>
+  <div class="field">
+    <label for="model">Transcription model</label>
+    <select id="model">
+      <option value="onnx-community/whisper-base_timestamped" selected>Whisper base (multilingual, word timing)</option>
+      <option value="onnx-community/whisper-base.en_timestamped">Whisper base English only</option>
+      <option value="onnx-community/whisper-small_timestamped">Whisper small (slower, more accurate)</option>
+      <option value="onnx-community/whisper-tiny.en_timestamped">Whisper tiny English only (fastest)</option>
+      <option value="custom">Custom Hugging Face model id</option>
+    </select>
+    <input type="text" id="modelCustom" placeholder="org/model-name" hidden>
+    <span class="hint">Downloaded once from Hugging Face, then cached by the browser.</span>
+  </div>
+  <div class="field">
+    <label for="lang">Spoken language</label>
+    <select id="lang">
+      <option value="en" selected>English</option>
+      <option value="auto">Detect automatically</option>
+      <option value="fr">French</option><option value="de">German</option><option value="es">Spanish</option>
+      <option value="it">Italian</option><option value="pt">Portuguese</option><option value="nl">Dutch</option>
+      <option value="ja">Japanese</option><option value="zh">Chinese</option><option value="hi">Hindi</option>
+    </select>
+    <span class="hint">The word-pattern measures (hedges, pronouns, conflicts) are English only.</span>
+  </div>
+  <div class="field">
+    <label for="device">Transcription compute</label>
+    <select id="device">
+      <option value="auto" selected>Use the GPU if the browser offers it</option>
+      <option value="wasm">CPU only</option>
+    </select>
+  </div>
+  <div class="field">
+    <label for="speed">Face analysis speed</label>
+    <select id="speed">
+      <option value="1" selected>Real time (most reliable)</option>
+      <option value="1.5">1.5×</option>
+      <option value="2">2× (fast machines only)</option>
+    </select>
+    <span class="hint">The video plays through once while the face is tracked. Keep the tab visible.</span>
+  </div>
+  <div class="field">
+    <label for="blinkThr">Blink threshold</label>
+    <div class="range"><input type="range" id="blinkThr" min="0.3" max="0.7" step="0.05" value="0.5"><span class="val" id="blinkThrVal">0.50</span></div>
+    <span class="hint">Eye closure score that counts as a blink. Lower catches more, including squints.</span>
+  </div>
+  <div class="field">
+    <label for="rateWin">Blink rate window</label>
+    <select id="rateWin">
+      <option value="6">6 seconds</option>
+      <option value="10" selected>10 seconds</option>
+      <option value="15">15 seconds</option>
+      <option value="20">20 seconds</option>
+    </select>
+  </div>
+  <div class="field">
+    <label for="gazeThr">Gaze threshold</label>
+    <div class="range"><input type="range" id="gazeThr" min="0.2" max="0.6" step="0.05" value="0.35"><span class="val" id="gazeThrVal">0.35</span></div>
+    <span class="hint">How far the eyes must turn down or aside before the frame counts as looking away.</span>
+  </div>
+  <div class="field">
+    <label for="lipThr">Lip movement needed to credit a word to the subject</label>
+    <div class="range"><input type="range" id="lipThr" min="0.002" max="0.03" step="0.001" value="0.008"><span class="val" id="lipThrVal">0.008</span><button class="btn ghost mini" id="btnLipAuto" type="button">Auto</button></div>
+    <span class="hint">Words spoken while the on-camera mouth is still are credited to whoever is off camera.</span>
+  </div>
+  <div class="field">
+    <label for="audioMode">How to get at the audio</label>
+    <select id="audioMode">
+      <option value="auto" selected>Automatic (decode on desktop, capture on phones)</option>
+      <option value="decode">Decode the whole file first (fast, needs memory)</option>
+      <option value="capture">Capture while the video plays (works on iPhone)</option>
+    </select>
+    <span class="hint">Capture runs at real time and tolerates files the browser cannot decode outright.</span>
+  </div>
+  <div class="field">
+    <label for="fileAudio">Separate audio file (optional)</label>
+    <input type="file" id="fileAudio" accept="audio/*">
+    <span class="hint">Used in decode mode only, when the video's own audio track cannot be read.</span>
+  </div>
+</section>
+
+<main class="work">
+  <aside class="left">
+    <div class="stage" id="stage">
+      <video id="video" playsinline preload="auto"></video>
+      <canvas id="overlay"></canvas>
+      <div class="stage-note" id="stageNote">Choose a video of an interview to begin. Processing happens in this browser; nothing is uploaded.</div>
+      <button class="tap" id="tapStart" hidden type="button">Tap to start the analysis pass</button>
+      <button class="ovl" id="ovlToggle" hidden type="button" title="Show or hide the tracking overlay">overlay on</button>
+      <div class="pick" id="pick" hidden><button id="btnPick" type="button" title="For calls with several people on screen: choose which face to follow">Pick subject</button><button id="btnPickClear" type="button" hidden>Whole frame</button><button id="btnFlip" type="button" hidden title="Switch between front and rear cameras">Flip camera</button></div>
+      <div class="pick-note" id="pickNote" hidden>Click the person to follow, or drag a box around their tile. Esc cancels.</div>
+    </div>
+    <div class="metrics">
+      <div class="metric"><b id="mBlinks">0</b><span>blinks counted</span></div>
+      <div class="metric"><b id="mRate">–<small>/min</small></b><span>rate at playhead</span></div>
+      <div class="metric"><b id="mBase">–<small>/min</small></b><span id="mBaseLabel">baseline</span></div>
+      <div class="metric"><b id="mSpeak">–<small>/min</small></b><span>while speaking</span></div>
+      <div class="metric"><b id="mListen">–<small>/min</small></b><span>while listening</span></div>
+      <div class="metric"><b id="mFace">–<small>%</small></b><span>face found</span></div>
+    </div>
+    <div class="status">
+      <div class="line"><span>Face tracking</span><em id="sFace">idle</em></div>
+      <div class="line"><span>Transcription</span><em id="sAsr">idle</em></div>
+      <div class="progress"><i id="pAsr"></i></div>
+      <div class="line"><span>Baseline</span><em id="sBase">not yet</em></div>
+    </div>
+    <div class="log" id="log"></div>
+  </aside>
+
+  <section class="right">
+    <div class="timeline">
+      <canvas id="timeline" tabindex="0" aria-label="Timeline. Drag to scrub. Arrow keys step; space plays and pauses."></canvas>
+      <div class="legend">
+        <span class="k-rate"><i></i>blink rate per minute</span>
+        <span class="k-base"><i></i>baseline</span>
+        <span class="k-blink"><i></i>blink</span>
+        <span class="k-speak"><i></i>subject speaking</span>
+        <span class="k-strip"><i></i>strips: darker is further above baseline</span>
+        <span class="k-gap"><i></i>no frames analysed</span>
+        <label class="zoom">View <select id="zoom">
+          <option value="all">whole recording</option>
+          <option value="300">5 minutes</option>
+          <option value="120">2 minutes</option>
+          <option value="30">30 seconds</option>
+        </select></label>
+      </div>
+    </div>
+    <div class="key" id="key" hidden>Under each line's blink bar, twelve cells left to right: blink rate, eyes down, eyes aside, eye movement, head movement, facial tension, voice pitch, pitch variation, loudness, speech rate, hesitation, response delay. Darker means further above the subject's own baseline; hover a cell for the figures. The number beside them is the overall load.</div>
+    <div class="transcript" id="transcript"><p class="empty">The transcript builds here as the audio is processed. Click any line to jump the video there.</p></div>
+    <section class="flags" id="flags" hidden>
+      <h2>Statements that may conflict</h2>
+      <p>Pairs of the subject's own clauses that share most of their words but disagree in polarity or in a number. Read each pair in context; the pattern catches restatements and corrections as readily as inconsistencies.</p>
+      <div id="flagList"></div>
+    </section>
+    <footer class="note">
+      <b>What this does and does not show.</b> Every measure here rises with cognitive load, arousal or discomfort. None of them is specific to lying. Blink rate also rises with dry air and contact lenses; eyes move down when people retrieve memories; pitch rises when people are nervous for any reason; hedging is also what careful, truthful people do. The control baseline matters more than any single figure, so start the interview with questions the subject can answer easily and truthfully. Read the amber as a map of where the conversation became effortful for the subject. No single physiological or linguistic signal has been shown to detect deception reliably, and combined ones do only modestly better than chance in the published literature. Recording a call, by screen capture or otherwise, may require the other participants' consent; the rules depend on where each of you is.
+    </footer>
+  </section>
+</main>
+
+<!-- Speech recognition worker (Whisper via Transformers.js). Kept as inert text and launched as a module worker. -->
+<script type="text/plain" id="asr-worker">
+const TF_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3/dist/transformers.min.js';
+let tf = null, pipe = null, pipeKey = '', pipeDevice = '';
+
+function say(type, data) { postMessage(Object.assign({ type }, data || {})); }
+
+async function ensurePipeline(modelId, devicePref) {
+  if (!tf) {
+    tf = await import(TF_URL);
+    tf.env.allowLocalModels = false;
+    tf.env.useBrowserCache = true;
+  }
+  const key = modelId + '|' + devicePref;
+  if (pipe && pipeKey === key) return;
+  if (pipe) { try { await pipe.dispose(); } catch (e) {} pipe = null; }
+  const progress_callback = (p) => {
+    if (p && p.status === 'progress') say('progress', { file: p.file, progress: p.progress || 0, loaded: p.loaded, total: p.total });
+    else if (p && p.status) say('progress', { file: p.file, status: p.status });
+  };
+  const candidates = devicePref === 'wasm' ? ['wasm'] : ['webgpu', 'wasm'];
+  let lastErr = null;
+  for (const device of candidates) {
+    if (device === 'webgpu' && !(self.navigator && self.navigator.gpu)) continue;
+    try {
+      const opts = { device, progress_callback };
+      if (device === 'webgpu') opts.dtype = { encoder_model: 'fp32', decoder_model_merged: 'q4' };
+      say('log', { text: 'Loading ' + modelId + ' on ' + (device === 'webgpu' ? 'WebGPU' : 'CPU') + '.' });
+      pipe = await tf.pipeline('automatic-speech-recognition', modelId, opts);
+      pipeKey = key; pipeDevice = device;
+      return;
+    } catch (err) {
+      lastErr = err;
+      say('log', { text: (device === 'webgpu' ? 'WebGPU' : 'CPU') + ' load failed: ' + (err && err.message ? err.message : err) });
+    }
+  }
+  throw lastErr || new Error('No compute backend available.');
+}
+
+self.onmessage = async (e) => {
+  const m = e.data || {};
+  try {
+    if (m.type === 'load') {
+      await ensurePipeline(m.model, m.device);
+      say('ready', { id: m.id, device: pipeDevice });
+    } else if (m.type === 'transcribe') {
+      await ensurePipeline(m.model, m.device);
+      const opts = { return_timestamps: 'word', task: 'transcribe' };
+      if (m.language && m.language !== 'auto' && !/\.en(_|-|$)/.test(m.model)) opts.language = m.language;
+      let out;
+      try {
+        out = await pipe(m.audio, opts);
+      } catch (err) {
+        say('log', { text: 'Word timing unavailable for this model, using phrase timing instead. (' + (err && err.message ? err.message : err) + ')' });
+        opts.return_timestamps = true;
+        out = await pipe(m.audio, opts);
+      }
+      const chunks = (out && out.chunks ? out.chunks : []).map(c => {
+        const ts = c.timestamp || [0, 0];
+        const s = (ts[0] == null ? 0 : ts[0]);
+        const en = (ts[1] == null ? s : ts[1]);
+        return { text: c.text || '', start: s + m.offset, end: Math.max(s, en) + m.offset };
+      });
+      if (!chunks.length && out && out.text) chunks.push({ text: out.text, start: m.offset, end: m.offset + m.seconds });
+      say('block', { id: m.id, index: m.index, total: m.total, chunks });
+    }
+  } catch (err) {
+    say('error', { id: m.id, text: (err && err.message) ? err.message : String(err) });
+  }
+};
+</script>
+
+<script type="module">
+const MP_PKG   = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10/vision_bundle.mjs';
+const MP_WASM  = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10/wasm';
+const MP_MODEL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
+const TF_URL   = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3/dist/transformers.min.js';
+const SR = 16000;
+const IS_MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/i.test(navigator.platform));
+const TL = { padL: 70, padR: 10 };
+const CAN_CAPTURE = !IS_MOBILE && !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
+const CAN_CAMERA = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+
+const $ = s => document.querySelector(s);
+const els = {
+  fileVideo: $('#fileVideo'), fileAudio: $('#fileAudio'), analyse: $('#btnAnalyse'), stop: $('#btnStop'), capture: $('#btnCapture'), camera: $('#btnCamera'), flip: $('#btnFlip'), save: $('#btnSave'), mark: $('#btnMark'), markClear: $('#btnMarkClear'),
+  json: $('#btnJson'), csv: $('#btnCsv'), settingsBtn: $('#btnSettings'), settings: $('#settings'),
+  model: $('#model'), modelCustom: $('#modelCustom'), lang: $('#lang'), device: $('#device'), speed: $('#speed'),
+  blinkThr: $('#blinkThr'), blinkThrVal: $('#blinkThrVal'), rateWin: $('#rateWin'), gazeThr: $('#gazeThr'), gazeThrVal: $('#gazeThrVal'),
+  lipThr: $('#lipThr'), lipThrVal: $('#lipThrVal'), lipAuto: $('#btnLipAuto'), audioMode: $('#audioMode'), baseMode: $('#baseMode'),
+  stage: $('#stage'), video: $('#video'), overlay: $('#overlay'), stageNote: $('#stageNote'), tap: $('#tapStart'),
+  mBlinks: $('#mBlinks'), mRate: $('#mRate'), mBase: $('#mBase'), mBaseLabel: $('#mBaseLabel'), mSpeak: $('#mSpeak'), mListen: $('#mListen'), mFace: $('#mFace'),
+  sFace: $('#sFace'), sAsr: $('#sAsr'), pAsr: $('#pAsr'), sBase: $('#sBase'), log: $('#log'),
+  timeline: $('#timeline'), zoom: $('#zoom'), key: $('#key'), transcript: $('#transcript'), flags: $('#flags'), flagList: $('#flagList'),
+};
+const video = els.video;
+
+const state = {
+  file: null, duration: 0,
+  samples: [], times: [], blinks: [], closures: [],
+  words: [], utterances: [], series: [], sDown: [], sGaze: [], stripStats: {}, baseline: null, baselineSource: '', yMax: 40,
+  speakBpm: null, listenBpm: null, controlKeys: new Set(), marks: new Map(), baseStats: {}, flagsList: [],
+  analysedUntil: 0, faceDone: false, asrDone: false, running: false, stopped: false, finalized: false, fps: 0,
+  eyeClosed: false, closeStart: 0, lastBlink: -1, bsIndex: null, lastTs: 0,
+  frames: 0, faceFrames: 0, landmarker: null, worker: null, waiters: new Map(), seq: 0,
+  rowEls: [], wordEls: [], currentRow: -1, currentWord: -1, rebuildTimer: null, hoverX: null,
+  scrubT: null, dragging: false, dragView: null, lastSeekAt: 0,
+  capMode: false, cap: null, pcm: null, audioCtx: null, outGain: null, capSrc: null, capSink: null, capNode: null,
+  asrQueue: [], asrPumping: false, blocksDone: 0, blocksTotal: 0, decodeFinished: false, playStarted: false, asrParams: null,
+  voiceCache: new Map(), voiceReady: false, voiceRun: 0,
+  baselineEnd: null,
+  isLive: false, liveStream: null, liveAudio: null, liveSrc: null, liveT0: 0, liveEnding: false, liveEndResolve: null, recorder: null, recChunks: [], recBlob: null,
+};
+function mediaNow() { return (state.isLive && state.running) ? Math.max(0, video.currentTime - state.liveT0) : video.currentTime; }
+function nowT() { return state.scrubT != null ? state.scrubT : (state.isLive && state.running ? state.analysedUntil : (video.currentTime || 0)); }
+const engine = { mode: null, key: '', device: '', tf: null, pipe: null, loading: null };
+function audioMode() { const v = els.audioMode.value; return v === 'auto' ? (IS_MOBILE ? 'capture' : 'decode') : v; }
+
+/* ---------- small helpers ---------- */
+const fmtTime = t => { t = Math.max(0, t || 0); const m = Math.floor(t / 60), s = Math.floor(t % 60); return m + ':' + String(s).padStart(2, '0'); };
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+function lowerBound(arr, x) { let lo = 0, hi = arr.length; while (lo < hi) { const mid = (lo + hi) >> 1; if (arr[mid] < x) lo = mid + 1; else hi = mid; } return lo; }
+function median(a) { if (!a.length) return null; const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
+function quantile(a, q) { if (!a.length) return null; const s = [...a].sort((x, y) => x - y); const p = (s.length - 1) * q, i = Math.floor(p); return i + 1 < s.length ? s[i] + (s[i + 1] - s[i]) * (p - i) : s[i]; }
+function meanStd(a) { const n = a.length; if (!n) return [0, 0]; const m = a.reduce((x, y) => x + y, 0) / n; const v = a.reduce((x, y) => x + (y - m) ** 2, 0) / n; return [m, Math.sqrt(v)]; }
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+const uKey = u => Math.round(u.start * 10);
+
+function log(text, isErr) {
+  const d = document.createElement('div'); if (isErr) d.className = 'err';
+  d.textContent = new Date().toLocaleTimeString([], { hour12: false }) + '  ' + text;
+  els.log.appendChild(d); while (els.log.childElementCount > 200) els.log.firstChild.remove();
+  els.log.scrollTop = els.log.scrollHeight;
+  if (isErr) console.error(text); else console.log(text);
+}
+
+/* ---------- settings UI ---------- */
+els.settingsBtn.addEventListener('click', () => {
+  const open = els.settings.hidden; els.settings.hidden = !open; els.settingsBtn.setAttribute('aria-expanded', String(open));
+});
+els.model.addEventListener('change', () => { els.modelCustom.hidden = els.model.value !== 'custom'; });
+els.blinkThr.addEventListener('input', () => { els.blinkThrVal.textContent = Number(els.blinkThr.value).toFixed(2); });
+els.gazeThr.addEventListener('input', () => { els.gazeThrVal.textContent = Number(els.gazeThr.value).toFixed(2); scheduleRebuild(); });
+els.lipThr.addEventListener('input', () => { els.lipThrVal.textContent = Number(els.lipThr.value).toFixed(3); scheduleRebuild(); });
+els.rateWin.addEventListener('change', scheduleRebuild);
+els.baseMode.addEventListener('change', scheduleRebuild);
+els.zoom.addEventListener('change', drawTimeline);
+els.lipAuto.addEventListener('click', () => {
+  const scores = state.words.map(w => w.lip).filter(v => v != null);
+  const thr = otsu(scores);
+  if (thr == null) { log('Not enough words with face data to pick a threshold automatically.'); return; }
+  els.lipThr.value = clamp(thr, 0.002, 0.03).toFixed(3); els.lipThrVal.textContent = els.lipThr.value;
+  log('Lip threshold set to ' + els.lipThr.value + ' from the distribution of word scores.'); scheduleRebuild();
+});
+function modelId() { return els.model.value === 'custom' ? (els.modelCustom.value.trim() || 'onnx-community/whisper-base_timestamped') : els.model.value; }
+
+/* ---------- file handling ---------- */
+els.fileVideo.addEventListener('change', () => {
+  const f = els.fileVideo.files[0]; if (!f) return;
+  endLiveStream(); resetAll();
+  state.file = f; state.marks = new Map(); state.roi = null; state.pickMode = false; state.baselineEnd = null; updateMarkButton();
+  if (video.src) URL.revokeObjectURL(video.src);
+  video.src = URL.createObjectURL(f);
+  video.muted = false; video.playbackRate = 1; video.controls = true;
+  els.stageNote.hidden = true; els.analyse.disabled = false; $('#pick').hidden = false; updatePickButtons(); els.mark.disabled = false;
+  log('Loaded ' + f.name + ' (' + (f.size / 1048576).toFixed(1) + ' MB).');
+});
+video.addEventListener('loadedmetadata', () => {
+  state.duration = isFinite(video.duration) ? video.duration : 0;
+  fitOverlay(); drawTimeline();
+});
+// The overlay must cover exactly the video's rendered box, whatever the panel around it does.
+function fitOverlay() {
+  const vw = video.videoWidth, vh = video.videoHeight; if (!vw || !vh) return;
+  if (els.overlay.width !== vw || els.overlay.height !== vh) { els.overlay.width = vw; els.overlay.height = vh; }
+  const st = els.overlay.style, l = video.offsetLeft, t = video.offsetTop, w = video.clientWidth, h = video.clientHeight;
+  if (st.width !== w + 'px' || st.height !== h + 'px' || st.left !== l + 'px' || st.top !== t + 'px') { st.left = l + 'px'; st.top = t + 'px'; st.width = w + 'px'; st.height = h + 'px'; }
+}
+window.addEventListener('resize', () => { fitOverlay(); drawTimeline(); });
+
+function resetAll() {
+  state.voiceRun++;
+  Object.assign(state, { samples: [], times: [], blinks: [], closures: [], words: [], utterances: [], series: [], sDown: [], sGaze: [], stripStats: {}, baseline: null, baselineSource: '', yMax: 40,
+    speakBpm: null, listenBpm: null, controlKeys: new Set(), baseStats: {}, flagsList: [], analysedUntil: 0, faceDone: false, asrDone: false, running: false, stopped: false, finalized: false, fps: 0,
+    eyeClosed: false, closeStart: 0, lastBlink: -1, lastTs: 0, frames: 0, faceFrames: 0, rowEls: [], wordEls: [], currentRow: -1, currentWord: -1, scrubT: null, dragging: false, dragView: null,
+    cap: null, pcm: null, asrQueue: [], asrPumping: false, blocksDone: 0, blocksTotal: 0, decodeFinished: false, playStarted: false, voiceCache: new Map(), voiceReady: false, multiWarned: false, liveT0: 0, liveEnding: false, liveEndResolve: null, recChunks: [] });
+  els.transcript.innerHTML = '<p class="empty">The transcript builds here as the audio is processed. Click any line to jump the video there.</p>';
+  els.json.disabled = true; els.csv.disabled = true; els.tap.hidden = true; els.key.hidden = true; els.flags.hidden = true; els.flagList.innerHTML = '';
+  $('#ovlToggle').hidden = true;
+  els.sFace.textContent = 'idle'; els.sAsr.textContent = 'idle'; els.pAsr.style.width = '0'; els.sBase.textContent = 'not yet';
+  updateMetrics(); drawTimeline(); clearOverlay();
+}
+
+/* ---------- run ---------- */
+els.analyse.addEventListener('click', async () => {
+  if (!state.file || state.running) return;
+  resetAll();
+  state.capMode = state.isLive || audioMode() === 'capture';
+  if (state.capMode) {
+    // Everything that needs a user gesture on iPhone happens here, before the first await.
+    try { state.isLive ? ensureLiveAudioGraph() : ensureAudioGraph(); }
+    catch (e) { if (state.isLive) log('No audio for the live capture (' + e.message + '); the transcript will stay empty.', true); else { log('Audio capture could not be set up (' + e.message + '); decoding the file instead.', true); state.capMode = false; } }
+  }
+  if (state.capMode && !state.isLive) {
+    state.outGain.gain.value = 0; video.muted = false;
+    const p = video.play(); if (p && p.then) p.then(() => { if (!state.playStarted) video.pause(); }).catch(() => {});
+  }
+  state.running = true; els.analyse.disabled = true; els.stop.disabled = false; els.fileVideo.disabled = true;
+  els.settings.hidden = true; els.settingsBtn.setAttribute('aria-expanded', 'false');
+  state.rebuildTimer = setInterval(() => { if (state.running) rebuild(); }, IS_MOBILE ? 4000 : 1500);
+  if (state.isLive) { els.stop.textContent = 'End capture'; els.capture.disabled = true; els.camera.disabled = true; els.flip.hidden = true; }
+  keepAwake();
+  log(state.isLive ? (state.liveKind === 'camera' ? 'Live analysis started from the camera. Keep the page open and the screen on; press End capture when the interview is over.' : 'Live analysis started. Keep this window on screen beside the call if you can; it carries on when hidden, but at the browser\u2019s lower priority. Press End capture when the call is over.') : state.capMode ? 'Capturing audio during playback.' : 'Decoding the audio track up front.');
+  const faceRun = runFace().catch(e => { log('Face tracking stopped: ' + e.message, true); state.faceDone = true; finalizeIfDone(); });
+  const asrRun = runAsr().catch(e => { log('Transcription stopped: ' + e.message, true); state.asrDone = true; finalizeIfDone(); });
+  await Promise.all([faceRun, asrRun]);
+});
+els.stop.addEventListener('click', () => {
+  if (!state.running) return;
+  if (state.isLive && !state.liveEnding) { endLivePass(); return; }
+  log('Stopped by hand. Keeping what was gathered so far.');
+  state.stopped = true; state.running = false; els.tap.hidden = true;
+  if (state.cap) { state.cap.active = false; state.cap.finished = true; }
+  state.asrQueue = [];
+  try { video.pause(); } catch (e) {}
+  stopHeartbeat();
+  if (state.worker) { state.worker.terminate(); state.worker = null; state.waiters.forEach(w => w.rej(new Error('stopped'))); state.waiters.clear(); engine.mode = null; engine.key = ''; }
+  state.faceDone = true; state.asrDone = true; finalizeIfDone();
+});
+
+function finalizeIfDone() {
+  if (!(state.faceDone && state.asrDone) || state.finalized) return;
+  state.finalized = true;
+  if (state.rebuildTimer) { clearInterval(state.rebuildTimer); state.rebuildTimer = null; }
+  state.running = false;
+  rebuild();
+  els.analyse.disabled = false; els.stop.disabled = true; els.fileVideo.disabled = false; els.tap.hidden = true;
+  els.json.disabled = !(state.words.length || state.blinks.length); els.csv.disabled = !state.utterances.length;
+  video.muted = false; video.playbackRate = 1; video.controls = true;
+  if (state.outGain) state.outGain.gain.value = 1;
+  try { video.pause(); video.currentTime = 0; } catch (e) {}
+  $('#ovlToggle').hidden = !state.samples.length;
+  drawStoredOverlay(0);
+  els.stop.textContent = 'Stop'; els.capture.disabled = !CAN_CAPTURE; els.camera.disabled = !CAN_CAMERA; els.save.hidden = !state.recBlob; releaseWake();
+  els.sFace.textContent = state.stopped ? 'stopped' : 'done'; els.sAsr.textContent = state.stopped ? 'stopped' : 'done';
+  log('Analysis pass complete: ' + state.blinks.length + ' blinks, ' + state.words.length + ' words, ' + state.utterances.length + ' lines.');
+  if (state.gaps && state.gaps.length) { const tot = state.gaps.reduce((a, g) => a + g[1] - g[0], 0); log(state.gaps.length + ' gap' + (state.gaps.length > 1 ? 's' : '') + ' with no analysed frames, ' + fmtTime(tot) + ' in all, hatched on the timeline. Keep this window on screen while a pass runs.'); }
+  analyseVoice();
+}
+
+/* ---------- face tracking (MediaPipe Face Landmarker) ---------- */
+async function initFace() {
+  if (state.landmarker) return state.landmarker;
+  els.sFace.textContent = 'loading model';
+  const mod = await import(MP_PKG);
+  const FaceLandmarker = mod.FaceLandmarker || (mod.default && mod.default.FaceLandmarker);
+  const FilesetResolver = mod.FilesetResolver || (mod.default && mod.default.FilesetResolver);
+  if (!FaceLandmarker) throw new Error('MediaPipe did not load.');
+  const fileset = await FilesetResolver.forVisionTasks(MP_WASM);
+  const make = delegate => FaceLandmarker.createFromOptions(fileset, {
+    baseOptions: { modelAssetPath: MP_MODEL, delegate },
+    runningMode: 'VIDEO', numFaces: 4, outputFaceBlendshapes: true, outputFacialTransformationMatrixes: false,
+  });
+  try { state.landmarker = await make('GPU'); log('Face tracker ready (GPU).'); }
+  catch (e) { log('GPU face tracking unavailable, using CPU. ' + e.message); state.landmarker = await make('CPU'); log('Face tracker ready (CPU).'); }
+  return state.landmarker;
+}
+
+function startPlayback() {
+  state.playStarted = true;
+  return video.play().catch(err => {
+    log('This device wants a tap before playback can begin (' + (err && err.name ? err.name : 'blocked') + ').');
+    return new Promise(res => {
+      els.tap.hidden = false;
+      els.tap.onclick = () => {
+        if (state.audioCtx) state.audioCtx.resume().catch(() => {});
+        video.play().then(() => { els.tap.hidden = true; res(); }).catch(e2 => { log('Could not start playback: ' + e2.message, true); });
+      };
+    });
+  });
+}
+
+async function runFace() {
+  await initFace();
+  if (!state.running) return;
+  state.faceDone = false;
+  video.controls = false;
+  if (state.isLive) {
+    if (state.liveSrc) { await ensureCaptureNode(); if (!state.running) return; connectCaptureSource(state.liveSrc); }
+    video.muted = true; if (state.outGain) state.outGain.gain.value = 0;
+    if (video.paused) await video.play().catch(() => {});
+    state.liveT0 = video.currentTime;
+    if (state.liveSrc) startCapture();
+    startRecorder();
+  } else if (state.capMode) {
+    await ensureCaptureNode();
+    if (!state.running) return;
+    connectCaptureSource(state.capSrc);
+    startCapture();
+    video.muted = false; state.outGain.gain.value = 0; video.playbackRate = 1;
+    if (Number(els.speed.value) > 1) log('Capture mode runs at real time; the faster setting is ignored.');
+  } else {
+    video.muted = true; video.playbackRate = Number(els.speed.value) || 1;
+  }
+  if (!state.isLive) video.currentTime = 0;
+  els.sFace.textContent = 'tracking';
+  let fpsCount = 0, fpsAt = performance.now();
+  const ended = state.isLive ? new Promise(res => { state.liveEndResolve = res; }) : new Promise(res => {
+    const h = () => { video.removeEventListener('ended', h); video.removeEventListener('pause', h2); res(); };
+    const h2 = () => { if (state.stopped) h(); };
+    video.addEventListener('ended', h); video.addEventListener('pause', h2);
+  });
+  let lastProcessed = -1;
+  const processFrame = (t) => {
+    if (t <= lastProcessed + 0.012) return;
+    lastProcessed = t;
+    let ts = performance.now(); if (ts <= state.lastTs) ts = state.lastTs + 1; state.lastTs = ts;
+    let res = null;
+    try { res = detectSubject(ts); } catch (e) { log('Detector error: ' + e.message, true); }
+    const visible = document.visibilityState === 'visible';
+    if (res) { ingestFrame(t, res); if (visible) drawOverlay(res); }
+    fpsCount++; const n2 = performance.now(); if (n2 - fpsAt >= 1000) { state.fps = fpsCount * 1000 / (n2 - fpsAt); fpsCount = 0; fpsAt = n2; if (visible) { updateMetrics(); drawTimeline(); } }
+  };
+  const step = (now, meta) => {
+    if (!state.running) return;
+    fitOverlay();
+    processFrame(state.isLive ? mediaNow() : (meta && typeof meta.mediaTime === 'number' ? meta.mediaTime : video.currentTime));
+    schedule();
+  };
+  // Hidden or covered pages get no frame callbacks, so a worker's clock keeps a live capture ticking.
+  if (state.isLive) startHeartbeat(() => { if (state.running && !state.liveEnding && document.visibilityState !== 'visible' && !video.paused) processFrame(mediaNow()); });
+  const hasRvfc = 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
+  let lastT = -1;
+  const schedule = () => {
+    if (!state.running || video.ended || state.liveEnding) return;
+    if (hasRvfc) video.requestVideoFrameCallback(step);
+    else requestAnimationFrame(() => { if (video.currentTime !== lastT) { lastT = video.currentTime; step(performance.now(), null); } else schedule(); });
+  };
+  if (!state.isLive) await startPlayback();
+  if (!state.running) return;
+  schedule();
+  await ended;
+  stopHeartbeat();
+  if (state.stopped) return;
+  if (state.isLive) await stopRecorderAndSwap();
+  if (state.eyeClosed) state.eyeClosed = false;
+  state.faceDone = true;
+  els.sFace.textContent = 'done';
+  log('Face pass finished: ' + state.frames + ' frames, face found in ' + Math.round(100 * state.faceFrames / Math.max(1, state.frames)) + '%.');
+  if (state.capMode && state.cap) {
+    state.cap.active = false; state.cap.finished = true;
+    maybeDispatch(true);
+    log('Captured ' + fmtTime(state.cap.total / SR) + ' of audio; finishing the transcript.');
+    pumpAsrQueue();
+  }
+  finalizeIfDone();
+}
+
+const LEFT_EYE = [33, 160, 158, 133, 153, 144], RIGHT_EYE = [362, 385, 387, 263, 373, 380];
+const EYES = { L: { out: 33, inn: 133, up: 159, lo: 145, iris: 468 }, R: { inn: 362, out: 263, up: 386, lo: 374, iris: 473 } };
+
+function irisPos(lm, e) {
+  const o = lm[e.out], i = lm[e.inn], u = lm[e.up], l = lm[e.lo], ir = lm[e.iris];
+  const w = dist(o, i) || 1e-3;
+  return [(ir.x - (o.x + i.x) / 2) / w, (ir.y - (u.y + l.y) / 2) / w];
+}
+
+function ingestFrame(t, res) {
+  state.frames++;
+  const s = { t, face: false, blink: 0, lip: 0, nx: 0, ny: 0, fw: 1, gd: 0, gh: 0, ix: 0, iy: 0, ten: 0 };
+  const lm = res.faceLandmarks && res.faceLandmarks[0];
+  const cats = res.faceBlendshapes && res.faceBlendshapes[0] && res.faceBlendshapes[0].categories;
+  if (lm && cats) {
+    if (!state.bsIndex) { state.bsIndex = {}; cats.forEach((c, i) => { state.bsIndex[c.categoryName] = i; }); }
+    const sc = name => { const i = state.bsIndex[name]; return i == null ? 0 : cats[i].score; };
+    const fw = dist(lm[234], lm[454]) || 1;
+    s.face = true; state.faceFrames++;
+    const pts = new Float32Array(32); let q = 0;
+    for (const i of OVL_PTS) { const p = lm[i]; pts[q++] = p.x; pts[q++] = p.y; }
+    s.pts = pts;
+    s.blink = (sc('eyeBlinkLeft') + sc('eyeBlinkRight')) / 2;
+    s.lip = dist(lm[13], lm[14]) / fw;
+    s.nx = lm[1].x; s.ny = lm[1].y; s.fw = fw;
+    // gaze: down minus up, and the conjugate sideways component (both eyes turning the same way)
+    s.gd = (sc('eyeLookDownLeft') + sc('eyeLookDownRight')) / 2 - (sc('eyeLookUpLeft') + sc('eyeLookUpRight')) / 2;
+    s.gh = Math.abs(((sc('eyeLookInLeft') - sc('eyeLookOutLeft')) - (sc('eyeLookInRight') - sc('eyeLookOutRight'))) / 2);
+    s.ten = (sc('browDownLeft') + sc('browDownRight') + sc('mouthPressLeft') + sc('mouthPressRight')) / 4;
+    if (lm.length >= 478) { const a = irisPos(lm, EYES.L), b = irisPos(lm, EYES.R); s.ix = (a[0] + b[0]) / 2; s.iy = (a[1] + b[1]) / 2; }
+  }
+  state.samples.push(s); state.times.push(t);
+  state.analysedUntil = t;
+  // blink state machine with hysteresis
+  const thr = Number(els.blinkThr.value) || 0.5;
+  if (!s.face) { state.eyeClosed = false; return; }
+  if (!state.eyeClosed && s.blink >= thr) { state.eyeClosed = true; state.closeStart = t; }
+  else if (state.eyeClosed && s.blink <= thr * 0.6) {
+    state.eyeClosed = false;
+    const dur = t - state.closeStart;
+    if (dur <= 0.8) { if (state.closeStart - state.lastBlink > 0.08) { state.blinks.push({ t: state.closeStart, dur }); state.lastBlink = state.closeStart; } }
+    else state.closures.push({ t: state.closeStart, dur });
+  }
+}
+
+/* ---------- where live capture cannot work, say why ---------- */
+const HOSTING_ADVICE = 'Open the file directly in Chrome on a computer, or put it at an https address of your own (your website, GitHub Pages, Netlify) and open that in Safari or Chrome; the camera then asks for permission in the normal way.';
+function captureBlockReason() {
+  const embedded = window.self !== window.top, secure = window.isSecureContext, md = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  let policy = null;
+  try { const fp = document.permissionsPolicy || document.featurePolicy; if (fp && fp.allowsFeature) policy = fp.allowsFeature('camera'); } catch (e) {}
+  if (!secure) return 'the page is not served over https, so the browser withholds the camera and microphone';
+  if (!md) return 'this browser exposes no camera or microphone to ' + (embedded ? 'a page embedded inside another app' : 'this page');
+  if (embedded && policy === false) return 'the page is embedded inside another app’s preview, which does not pass camera permission through';
+  if (embedded) return 'the page is embedded inside another app’s preview, which usually blocks the camera';
+  return null;
+}
+
+/* ---------- the baseline mark: where the control questions end ---------- */
+function updateMarkButton() {
+  const set = state.baselineEnd != null;
+  els.mark.textContent = set ? 'Baseline ends ' + fmtTime(state.baselineEnd) : 'Baseline ends here';
+  els.markClear.hidden = !set;
+}
+function setBaselineMark() {
+  if (!state.file) return;
+  const t = state.running ? (state.isLive ? state.analysedUntil : video.currentTime) : (state.scrubT != null ? state.scrubT : video.currentTime);
+  state.baselineEnd = Math.max(0, t);
+  if (els.baseMode.value !== 'mark') { els.baseMode.value = 'mark'; }
+  updateMarkButton();
+  log('Baseline mark set at ' + fmtTime(state.baselineEnd) + '. The subject’s answers before it are the control set.');
+  if (state.running) drawTimeline(); else rebuild();
+}
+els.mark.addEventListener('click', setBaselineMark);
+els.markClear.addEventListener('click', () => {
+  state.baselineEnd = null; updateMarkButton();
+  if (els.baseMode.value === 'mark') els.baseMode.value = '60';
+  log('Baseline mark cleared; back to the first 60 s of subject speech.');
+  if (state.running) drawTimeline(); else rebuild();
+});
+
+/* ---------- heartbeat: a worker's timer is not throttled when the page is hidden ---------- */
+const HB_SRC = "let id=null;onmessage=e=>{if(e.data==='start'&&!id)id=setInterval(()=>postMessage(0),33);if(e.data==='stop'&&id){clearInterval(id);id=null;}};";
+function startHeartbeat(onTick) {
+  if (!state.hb) { try { state.hb = new Worker(URL.createObjectURL(new Blob([HB_SRC], { type: 'text/javascript' }))); } catch (e) { log('No background clock available: ' + e.message); return; } }
+  state.hb.onmessage = onTick; state.hb.postMessage('start');
+}
+function stopHeartbeat() { if (state.hb) { state.hb.postMessage('stop'); state.hb.onmessage = null; } }
+
+/* ---------- live capture: a screen, window or tab, analysed as it happens ---------- */
+function endLiveStream() {
+  if (state.liveStream) { state.liveStream.getTracks().forEach(t => t.stop()); }
+  if (state.liveAudio) { state.liveAudio.getTracks().forEach(t => t.stop()); }
+  state.liveStream = null; state.liveAudio = null; state.liveSrc = null; state.isLive = false;
+  els.stop.textContent = 'Stop'; els.capture.disabled = !CAN_CAPTURE; els.camera.disabled = !CAN_CAMERA; els.flip.hidden = true;
+}
+els.capture.addEventListener('click', async () => {
+  if (state.running) return;
+  if (!CAN_CAPTURE) { log('This browser cannot capture the screen. Use Chrome or Edge on a desktop, or the camera on a phone.', true); return; }
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true, selfBrowserSurface: 'exclude', systemAudio: 'include' });
+  } catch (e) { log('Screen capture was not started (' + (e.name === 'NotAllowedError' ? 'permission declined' : e.message) + ').'); return; }
+  let audioStream = stream.getAudioTracks().length ? new MediaStream(stream.getAudioTracks()) : null, micStream = null;
+  if (!audioStream) {
+    try {
+      audioStream = micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } });
+      log('The capture carries no audio (on a Mac, only a browser tab shares its sound). Listening through the microphone instead, which picks up the call through your speakers; headphones will defeat it.');
+    } catch (e) { log('No audio available: the capture has none and the microphone was refused. The transcript will stay empty.', true); }
+  } else log('Audio is coming from the capture itself.');
+  const vt = stream.getVideoTracks()[0], st = vt && vt.getSettings ? vt.getSettings() : {};
+  await attachLiveStream(stream, audioStream, micStream, 'screen', 'Capturing ' + (st.displaySurface || 'the screen') + (st.width ? ' at ' + st.width + '×' + st.height : '') + '. Pick the subject if several people are on screen, then press Analyse.');
+});
+els.camera.addEventListener('click', () => startCamera(state.facing || (IS_MOBILE ? 'environment' : 'user')));
+els.flip.addEventListener('click', e => { e.stopPropagation(); if (!state.running) startCamera(state.facing === 'user' ? 'environment' : 'user'); });
+async function startCamera(facing) {
+  if (state.running) return;
+  if (!CAN_CAMERA) { log('This browser offers no camera access.', true); return; }
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } }, audio: { echoCancellation: false, noiseSuppression: false } });
+  } catch (e) {
+    if (e.name === 'NotAllowedError' || e.name === 'SecurityError') { const why = captureBlockReason(); log('The browser refused the camera' + (why ? ': ' + why : ' (permission declined)') + '. ' + (e.message || '') + (why ? ' ' + HOSTING_ADVICE : ''), true); return; }
+    try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing }, audio: true }); }
+    catch (e2) { log('The camera could not be started (' + e2.message + ').', true); return; }
+  }
+  state.facing = facing;
+  const audioStream = stream.getAudioTracks().length ? new MediaStream(stream.getAudioTracks()) : null;
+  if (!audioStream) log('The camera stream has no microphone; the transcript will stay empty.', true);
+  const vt = stream.getVideoTracks()[0], st = vt && vt.getSettings ? vt.getSettings() : {};
+  await attachLiveStream(stream, audioStream, null, 'camera', 'Camera running' + (st.width ? ' at ' + st.width + '×' + st.height : '') + (st.facingMode ? ' (' + (st.facingMode === 'user' ? 'front' : 'rear') + ')' : '') + '. Point it at the interviewee, pick their face if needed, then press Analyse.');
+  els.flip.hidden = false;
+}
+async function attachLiveStream(stream, audioStream, micStream, kind, message) {
+  endLiveStream(); resetAll();
+  state.liveStream = stream; state.liveAudio = micStream; state.liveAudioStream = audioStream; state.liveKind = kind;
+  state.isLive = true; state.roi = null; state.pickMode = false; state.recBlob = null; els.save.hidden = true; state.baselineEnd = null; updateMarkButton(); els.mark.disabled = false;
+  state.file = { name: (kind === 'camera' ? 'camera-' : 'screen-capture-') + new Date().toISOString().slice(0, 16).replace(/[-:T]/g, ''), size: 0 };
+  if (video.src) { URL.revokeObjectURL(video.src); video.removeAttribute('src'); }
+  video.muted = true; video.setAttribute('muted', ''); video.controls = false; video.srcObject = stream;
+  try { await video.play(); } catch (e) {}
+  els.stageNote.hidden = true; els.analyse.disabled = false; $('#pick').hidden = false; updatePickButtons(); els.flip.hidden = kind !== 'camera';
+  els.sFace.textContent = 'previewing'; els.sAsr.textContent = audioStream ? 'ready' : 'no audio';
+  log(message);
+  const vt = stream.getVideoTracks()[0];
+  vt.addEventListener('ended', () => { if (state.liveStream !== stream) return; log(kind === 'camera' ? 'The camera stopped.' : 'Sharing was stopped from the browser.'); if (state.running && state.isLive && !state.liveEnding) endLivePass(); else if (!state.running) { endLiveStream(); els.analyse.disabled = true; els.stageNote.hidden = false; } });
+}
+async function keepAwake() {
+  if (!('wakeLock' in navigator)) return;
+  try { state.wakeLock = await navigator.wakeLock.request('screen'); state.wakeLock.addEventListener('release', () => { state.wakeLock = null; }); } catch (e) {}
+}
+function releaseWake() { if (state.wakeLock) { state.wakeLock.release().catch(() => {}); state.wakeLock = null; } }
+function ensureLiveAudioGraph() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) throw new Error('Web Audio is not available');
+  if (!state.audioCtx) {
+    const ctx = new AC(); ctx.resume().catch(() => {});
+    const sink = ctx.createGain(); sink.gain.value = 0; sink.connect(ctx.destination);
+    Object.assign(state, { audioCtx: ctx, capSink: sink });
+  } else state.audioCtx.resume().catch(() => {});
+  if (!state.liveAudioStream) throw new Error('no audio source');
+  state.liveSrc = state.audioCtx.createMediaStreamSource(state.liveAudioStream);
+}
+function startRecorder() {
+  if (!window.MediaRecorder) { log('This browser cannot record the capture; the analysis will run but there will be nothing to scrub afterwards.'); return; }
+  const tracks = [...state.liveStream.getVideoTracks(), ...(state.liveAudioStream ? state.liveAudioStream.getAudioTracks() : [])];
+  const mix = new MediaStream(tracks);
+  const types = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4;codecs=avc1,mp4a', 'video/mp4'];
+  const mimeType = types.find(t => MediaRecorder.isTypeSupported(t)) || '';
+  try {
+    const rec = new MediaRecorder(mix, mimeType ? { mimeType, videoBitsPerSecond: 2500000 } : undefined);
+    state.recChunks = [];
+    rec.ondataavailable = e => { if (e.data && e.data.size) state.recChunks.push(e.data); };
+    rec.start(1000); state.recorder = rec; state.recorderMime = mimeType;
+    log('Recording the capture (' + (mimeType || 'default format') + ') so it can be scrubbed afterwards.');
+  } catch (e) { log('Recording failed to start: ' + e.message, true); state.recorder = null; }
+}
+function endLivePass() {
+  if (!state.isLive || !state.running || state.liveEnding) return;
+  state.liveEnding = true; els.stop.disabled = true; els.sFace.textContent = 'finishing';
+  log('Ending the capture; the transcript will catch up on what is still queued.');
+  if (state.liveEndResolve) state.liveEndResolve();
+}
+async function stopRecorderAndSwap() {
+  const rec = state.recorder; state.recorder = null;
+  if (rec && rec.state !== 'inactive') { await new Promise(res => { rec.onstop = res; try { rec.stop(); } catch (e) { res(); } }); }
+  const passLength = state.analysedUntil;
+  if (state.liveStream) state.liveStream.getTracks().forEach(t => t.stop());
+  if (state.liveAudio) state.liveAudio.getTracks().forEach(t => t.stop());
+  state.liveStream = null; state.liveAudio = null;
+  video.srcObject = null;
+  if (state.recChunks.length) {
+    const mime = state.recChunks[0].type || (state.recorderMime || 'video/webm');
+    const blob = new File(state.recChunks, state.file.name.replace(/\.(webm|mp4)$/, '') + (/mp4/.test(mime) ? '.mp4' : '.webm'), { type: mime });
+    state.recBlob = blob; state.file = blob;
+    const url = URL.createObjectURL(blob);
+    await new Promise(res => {
+      const onMeta = () => {
+        video.removeEventListener('loadedmetadata', onMeta);
+        if (isFinite(video.duration)) { state.duration = video.duration; res(); return; }
+        // Recorded WebM files report no length until the browser has looked at the end once.
+        const onSeek = () => { video.removeEventListener('seeked', onSeek); state.duration = isFinite(video.duration) && video.duration > 0 ? video.duration : passLength; res(); };
+        video.addEventListener('seeked', onSeek); video.currentTime = 1e101;
+      };
+      video.addEventListener('loadedmetadata', onMeta); video.src = url; video.load();
+    });
+    log('Recording ready: ' + fmtTime(state.duration) + ', ' + (blob.size / 1048576).toFixed(1) + ' MB. Save it from the toolbar if you want to keep it.');
+  } else { state.duration = passLength; log('No recording was kept; the measures and transcript remain, but there is no picture to scrub.'); }
+  state.isLive = false; els.capture.disabled = !CAN_CAPTURE; els.camera.disabled = !CAN_CAMERA;
+}
+els.save.addEventListener('click', () => {
+  if (!state.recBlob) return;
+  const a = document.createElement('a'); a.href = URL.createObjectURL(state.recBlob); a.download = state.file.name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+});
+
+/* ---------- subject picker: follow one face on a multi-person screen ---------- */
+state.roi = null; state.pickMode = false; state.pickFaces = []; state.cropCanvas = document.createElement('canvas'); state.multiWarned = false;
+const faceBox = lm => { let x0 = 1, y0 = 1, x1 = 0, y1 = 0; for (const p of lm) { if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x; if (p.y < y0) y0 = p.y; if (p.y > y1) y1 = p.y; } return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }; };
+function clampRoi(r) {
+  const x = clamp(r.x, 0, 1), y = clamp(r.y, 0, 1);
+  return { x, y, w: clamp(r.w, 0.02, 1 - x), h: clamp(r.h, 0.02, 1 - y) };
+}
+// Run the detector on the whole frame, or on the subject's box upscaled, and return one face in full-frame coordinates.
+function detectSubject(ts) {
+  const roi = state.roi;
+  if (!roi) {
+    const res = state.landmarker.detectForVideo(video, ts);
+    const faces = res.faceLandmarks || [];
+    if (faces.length > 1 && !state.multiWarned) { state.multiWarned = true; log('More than one face in frame; following the largest. Use Pick subject to choose a person.'); }
+    if (faces.length <= 1) return res;
+    let best = 0, bw = -1; faces.forEach((lm, i) => { const b = faceBox(lm); if (b.w > bw) { bw = b.w; best = i; } });
+    return { faceLandmarks: [faces[best]], faceBlendshapes: [res.faceBlendshapes[best]] };
+  }
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const sx = Math.floor(roi.x * vw), sy = Math.floor(roi.y * vh), sw = Math.max(8, Math.floor(roi.w * vw)), sh = Math.max(8, Math.floor(roi.h * vh));
+  const scale = clamp(384 / Math.min(sw, sh), 1, 3), cw = Math.round(sw * scale), ch = Math.round(sh * scale);
+  const cc = state.cropCanvas; if (cc.width !== cw || cc.height !== ch) { cc.width = cw; cc.height = ch; }
+  cc.getContext('2d').drawImage(video, sx, sy, sw, sh, 0, 0, cw, ch);
+  const res = state.landmarker.detectForVideo(cc, ts);
+  const faces = res.faceLandmarks || [];
+  if (!faces.length) return { faceLandmarks: [], faceBlendshapes: [] };
+  let best = 0, bd = Infinity;
+  faces.forEach((lm, i) => { const b = faceBox(lm), d = Math.hypot(b.x + b.w / 2 - 0.5, b.y + b.h / 2 - 0.5) - b.w; if (d < bd) { bd = d; best = i; } });
+  const fx = sx / vw, fy = sy / vh, fw = sw / vw, fh = sh / vh;
+  const mapped = faces[best].map(p => ({ x: fx + p.x * fw, y: fy + p.y * fh, z: p.z }));
+  // follow slow drift of the tile, but never jump
+  const b = faceBox(mapped), cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+  state.roi = clampRoi({ x: roi.x + 0.08 * (cx - (roi.x + roi.w / 2)), y: roi.y + 0.08 * (cy - (roi.y + roi.h / 2)), w: roi.w, h: roi.h });
+  return { faceLandmarks: [mapped], faceBlendshapes: [res.faceBlendshapes[best]] };
+}
+function drawRoi(c, W, H) {
+  const r = state.roi; if (!r) return;
+  c.save(); c.setLineDash([6, 4]); c.lineWidth = Math.max(1, W / 700); c.strokeStyle = 'rgba(240,165,60,.9)';
+  c.strokeRect(r.x * W, r.y * H, r.w * W, r.h * H);
+  c.setLineDash([]); c.font = Math.round(Math.max(11, H / 36)) + 'px "IBM Plex Sans", sans-serif'; c.textBaseline = 'bottom'; c.fillStyle = 'rgba(240,165,60,.9)';
+  c.fillText('subject', r.x * W + 4, r.y * H - 2 < 12 ? r.y * H + 14 : r.y * H - 2); c.restore();
+}
+function drawPickCandidates() {
+  const c = els.overlay.getContext('2d'), W = els.overlay.width, H = els.overlay.height;
+  c.clearRect(0, 0, W, H);
+  c.font = Math.round(Math.max(12, H / 28)) + 'px "IBM Plex Sans", sans-serif'; c.textBaseline = 'top'; c.lineWidth = Math.max(1.5, W / 500);
+  state.pickFaces.forEach((b, i) => {
+    c.strokeStyle = 'rgba(255,255,255,.9)'; c.strokeRect(b.x * W, b.y * H, b.w * W, b.h * H);
+    c.fillStyle = 'rgba(0,0,0,.6)'; c.fillRect(b.x * W, b.y * H, 22, 22); c.fillStyle = '#fff'; c.fillText(String(i + 1), b.x * W + 6, b.y * H + 3);
+  });
+  if (state.pickDrag) { const d = state.pickDrag; c.setLineDash([6, 4]); c.strokeStyle = 'rgba(240,165,60,.95)'; c.strokeRect(Math.min(d.x0, d.x1) * W, Math.min(d.y0, d.y1) * H, Math.abs(d.x1 - d.x0) * W, Math.abs(d.y1 - d.y0) * H); c.setLineDash([]); }
+  if (!state.pickFaces.length) { c.fillStyle = 'rgba(0,0,0,.55)'; c.fillRect(0, 0, 250, 26); c.fillStyle = '#fff'; c.fillText('no faces found here; drag a box', 8, 6); }
+}
+function updatePickButtons() {
+  const set = !!state.roi;
+  $('#btnPick').textContent = state.pickMode ? 'Picking' : set ? 'Change subject' : 'Pick subject';
+  $('#btnPick').classList.toggle('set', set); $('#btnPickClear').hidden = !set || state.pickMode;
+  $('#pickNote').hidden = !state.pickMode; els.stage.classList.toggle('picking', state.pickMode);
+}
+async function enterPickMode() {
+  if (state.running || !state.file || state.pickMode) return;
+  try { video.pause(); } catch (e) {}
+  if (video.readyState < 2) { log('The video has no frame to show yet; scrub to a moment where the person is visible and try again.'); return; }
+  state.pickMode = true; state.pickFaces = []; state.pickDrag = null; video.controls = false; updatePickButtons();
+  try {
+    await initFace();
+    await state.landmarker.setOptions({ numFaces: 8 });
+    let ts = performance.now(); if (ts <= state.lastTs) ts = state.lastTs + 1; state.lastTs = ts;
+    const res = state.landmarker.detectForVideo(video, ts);
+    state.pickFaces = (res.faceLandmarks || []).map(faceBox);
+    await state.landmarker.setOptions({ numFaces: 4 });
+  } catch (e) { log('Could not look for faces on this frame: ' + e.message, true); }
+  if (!state.pickMode) return;
+  fitOverlay(); drawPickCandidates();
+  log(state.pickFaces.length + ' face' + (state.pickFaces.length === 1 ? '' : 's') + ' found on this frame. Click one, or drag a box.');
+}
+function leavePickMode(roi) {
+  state.pickMode = false; state.pickDrag = null; video.controls = !state.isLive;
+  if (state.isLive && video.paused) video.play().catch(() => {});
+  if (roi) { state.roi = clampRoi(roi); log('Subject set to the box at ' + Math.round(roi.x * 100) + '%, ' + Math.round(roi.y * 100) + '% of the frame. The tracker will work inside it.'); }
+  updatePickButtons();
+  const c = els.overlay.getContext('2d'); c.clearRect(0, 0, els.overlay.width, els.overlay.height);
+  if (state.samples.length) drawStoredOverlay(video.currentTime); else drawRoi(c, els.overlay.width, els.overlay.height);
+}
+function stagePoint(e) { const r = video.getBoundingClientRect(); return { x: clamp((e.clientX - r.left) / r.width, 0, 1), y: clamp((e.clientY - r.top) / r.height, 0, 1) }; }
+$('#btnPick').addEventListener('click', e => { e.stopPropagation(); enterPickMode(); });
+$('#btnPickClear').addEventListener('click', e => { e.stopPropagation(); state.roi = null; updatePickButtons(); log('Subject cleared; tracking the largest face in the whole frame.'); const c = els.overlay.getContext('2d'); c.clearRect(0, 0, els.overlay.width, els.overlay.height); if (state.samples.length) drawStoredOverlay(video.currentTime); });
+els.stage.addEventListener('pointerdown', e => {
+  if (!state.pickMode || e.target.closest('button')) return;
+  e.preventDefault(); els.stage.setPointerCapture(e.pointerId);
+  const p = stagePoint(e); state.pickDrag = { x0: p.x, y0: p.y, x1: p.x, y1: p.y, px: e.clientX, py: e.clientY };
+});
+els.stage.addEventListener('pointermove', e => {
+  if (!state.pickMode || !state.pickDrag) return;
+  const p = stagePoint(e); state.pickDrag.x1 = p.x; state.pickDrag.y1 = p.y; drawPickCandidates();
+});
+els.stage.addEventListener('pointerup', e => {
+  if (!state.pickMode || !state.pickDrag) return;
+  const d = state.pickDrag, p = stagePoint(e);
+  if (Math.hypot(e.clientX - d.px, e.clientY - d.py) >= 8) { leavePickMode({ x: Math.min(d.x0, p.x), y: Math.min(d.y0, p.y), w: Math.abs(p.x - d.x0), h: Math.abs(p.y - d.y0) }); return; }
+  // a click: the face under the pointer, else the nearest one within reach
+  let best = null, bd = Infinity;
+  for (const b of state.pickFaces) {
+    const inside = p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h;
+    const dd = inside ? 0 : Math.hypot(p.x - (b.x + b.w / 2), p.y - (b.y + b.h / 2)) / Math.max(b.w, 0.02);
+    if (dd < bd && dd < 1.5) { bd = dd; best = b; }
+  }
+  if (!best) { state.pickDrag = null; drawPickCandidates(); log('No face there. Click closer to a face, or drag a box around the person.'); return; }
+  leavePickMode({ x: best.x - best.w * 0.5, y: best.y - best.h * 0.6, w: best.w * 2, h: best.h * 2.2 });
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && state.pickMode) leavePickMode(null); });
+
+const OVL_PTS = [33, 160, 158, 133, 153, 144, 362, 385, 387, 263, 373, 380, 468, 473, 13, 14];
+function clearOverlay() { const c = els.overlay.getContext('2d'); c.clearRect(0, 0, els.overlay.width, els.overlay.height); }
+function pill(c, text, hot) {
+  c.font = Math.round(Math.max(12, els.overlay.height / 28)) + 'px "IBM Plex Sans", sans-serif'; c.textBaseline = 'top';
+  const tw = c.measureText(text).width + 16;
+  c.fillStyle = hot ? 'rgba(200,100,10,.85)' : 'rgba(0,0,0,.55)'; c.fillRect(0, 0, tw, 26); c.fillStyle = '#fff'; c.fillText(text, 8, 6);
+}
+// After the pass: redraw the stored eye points for whatever moment the playhead is on.
+function drawStoredOverlay(t) {
+  if (state.running) return;
+  const c = els.overlay.getContext('2d'), W = els.overlay.width, H = els.overlay.height;
+  c.clearRect(0, 0, W, H);
+  if (!state.showOverlay) return;
+  drawRoi(c, W, H);
+  if (!state.samples.length) return;
+  fitOverlay();
+  const T = state.times; let i = lowerBound(T, t); if (i > 0 && (i >= T.length || T[i] - t > t - T[i - 1])) i--;
+  const s = state.samples[i];
+  if (!s || Math.abs(s.t - t) > 0.25) { pill(c, 'no tracking data here', false); return; }
+  const thr = Number(els.blinkThr.value) || 0.5, gthr = Number(els.gazeThr.value) || 0.35;
+  const nBlinks = lowerBound(state.blinks.map(b => b.t), t + 0.05), rate = rateAt(t);
+  let label = nBlinks + ' blinks' + (rate == null ? '' : '   ' + rate.toFixed(0) + '/min');
+  if (!s.face || !s.pts) { pill(c, label + '   no face', false); return; }
+  const closed = s.blink >= thr, p = s.pts, P = k => [p[2 * k] * W, p[2 * k + 1] * H];
+  c.lineWidth = Math.max(1, W / 600); c.strokeStyle = closed ? '#f0a53c' : 'rgba(255,255,255,.85)';
+  for (const base of [0, 6]) { c.beginPath(); for (let k = 0; k < 6; k++) { const [x, y] = P(base + k); k ? c.lineTo(x, y) : c.moveTo(x, y); } c.closePath(); c.stroke(); }
+  if (!closed) { c.fillStyle = '#f0a53c'; for (const k of [12, 13]) { const [x, y] = P(k); c.beginPath(); c.arc(x, y, Math.max(2, W / 320), 0, Math.PI * 2); c.fill(); } }
+  const [mx1, my1] = P(14), [mx2, my2] = P(15);
+  c.strokeStyle = 'rgba(255,255,255,.5)'; c.beginPath(); c.moveTo(mx1, my1); c.lineTo(mx2, my2); c.stroke();
+  if (closed) label += '   blink'; else if (s.gd > gthr) label += '   down'; else if (s.gh > gthr) label += '   aside';
+  pill(c, label, closed);
+}
+state.showOverlay = true;
+$('#ovlToggle').addEventListener('click', e => {
+  state.showOverlay = !state.showOverlay;
+  e.currentTarget.textContent = state.showOverlay ? 'overlay on' : 'overlay off'; e.currentTarget.classList.toggle('off', !state.showOverlay);
+  drawStoredOverlay(state.scrubT != null ? state.scrubT : video.currentTime);
+});
+function drawOverlay(res) {
+  const c = els.overlay.getContext('2d'), W = els.overlay.width, H = els.overlay.height;
+  c.clearRect(0, 0, W, H);
+  const lm = res.faceLandmarks && res.faceLandmarks[0];
+  c.font = Math.round(Math.max(12, H / 28)) + 'px "IBM Plex Sans", sans-serif';
+  c.textBaseline = 'top';
+  drawRoi(c, W, H);
+  if (!lm) { c.fillStyle = 'rgba(0,0,0,.55)'; c.fillRect(0, 0, 110, 26); c.fillStyle = '#fff'; c.fillText('no face', 8, 6); return; }
+  const closed = state.eyeClosed, s = state.samples[state.samples.length - 1], gthr = Number(els.gazeThr.value) || 0.35;
+  c.lineWidth = Math.max(1, W / 600); c.strokeStyle = closed ? '#f0a53c' : 'rgba(255,255,255,.85)';
+  for (const eye of [LEFT_EYE, RIGHT_EYE]) {
+    c.beginPath(); eye.forEach((i, k) => { const p = lm[i]; k ? c.lineTo(p.x * W, p.y * H) : c.moveTo(p.x * W, p.y * H); }); c.closePath(); c.stroke();
+  }
+  if (lm.length >= 478 && !closed) {
+    c.fillStyle = '#f0a53c';
+    for (const i of [468, 473]) { const p = lm[i]; c.beginPath(); c.arc(p.x * W, p.y * H, Math.max(2, W / 320), 0, Math.PI * 2); c.fill(); }
+  }
+  c.strokeStyle = 'rgba(255,255,255,.5)'; c.beginPath(); c.moveTo(lm[13].x * W, lm[13].y * H); c.lineTo(lm[14].x * W, lm[14].y * H); c.stroke();
+  const n = state.blinks.length, rate = rateAt(mediaNow());
+  let label = n + ' blinks' + (rate == null ? '' : '   ' + rate.toFixed(0) + '/min');
+  if (closed) label += '   blink'; else if (s && s.gd > gthr) label += '   down'; else if (s && s.gh > gthr) label += '   aside';
+  const tw = c.measureText(label).width + 16;
+  c.fillStyle = closed ? 'rgba(200,100,10,.85)' : 'rgba(0,0,0,.55)'; c.fillRect(0, 0, tw, 26); c.fillStyle = '#fff'; c.fillText(label, 8, 6);
+}
+
+/* ---------- audio: decode mode ---------- */
+async function decodeAudio(file) {
+  const buf = await file.arrayBuffer();
+  const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  const probe = new OAC(1, 1, SR);
+  const decoded = await probe.decodeAudioData(buf);
+  if (decoded.sampleRate === SR) {
+    const n = decoded.length, ch = decoded.numberOfChannels, out = new Float32Array(n);
+    for (let c = 0; c < ch; c++) { const d = decoded.getChannelData(c); for (let i = 0; i < n; i++) out[i] += d[i] / ch; }
+    return out;
+  }
+  const len = Math.max(1, Math.ceil(decoded.duration * SR));
+  const oac = new OAC(1, len, SR);
+  const src = oac.createBufferSource(); src.buffer = decoded; src.connect(oac.destination); src.start();
+  const out = await oac.startRendering();
+  return out.getChannelData(0);
+}
+function quietestCut(buf, lo, hi) {
+  const frame = Math.round(SR * 0.05); let best = lo, bv = Infinity;
+  for (let s = lo; s + frame <= hi; s += frame) { let acc = 0; for (let j = 0; j < frame; j++) acc += buf[s + j] * buf[s + j]; if (acc < bv) { bv = acc; best = s; } }
+  return best;
+}
+function planBlocks(pcm, target = 26, search = 3) {
+  const blocks = []; let start = 0;
+  while (start < pcm.length) {
+    const t = start + target * SR;
+    if (t >= pcm.length - 2 * SR) { blocks.push([start, pcm.length]); break; }
+    const cut = quietestCut(pcm, Math.max(start + 5 * SR, t - search * SR), Math.min(pcm.length, t + search * SR));
+    blocks.push([start, cut]); start = cut;
+  }
+  return blocks;
+}
+
+/* ---------- audio: capture mode (phones, and anything decodeAudioData refuses) ---------- */
+const WORKLET_SRC = "class Cap extends AudioWorkletProcessor{constructor(){super();this.buf=new Float32Array(4096);this.n=0;}process(inputs){const inp=inputs[0];if(!inp||!inp.length)return true;const len=inp[0].length;for(let i=0;i<len;i++){let v=0;for(let c=0;c<inp.length;c++)v+=inp[c][i];this.buf[this.n++]=v/inp.length;if(this.n===this.buf.length){const b=this.buf;this.buf=new Float32Array(4096);this.n=0;this.port.postMessage(b,[b.buffer]);}}return true;}}registerProcessor('cap',Cap);";
+
+function ensureAudioGraph() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) throw new Error('Web Audio is not available');
+  if (!state.audioCtx) {
+    const ctx = new AC(); ctx.resume().catch(() => {});
+    const sink = ctx.createGain(); sink.gain.value = 0; sink.connect(ctx.destination);
+    Object.assign(state, { audioCtx: ctx, capSink: sink });
+  } else state.audioCtx.resume().catch(() => {});
+  if (!state.capSrc) {
+    const ctx = state.audioCtx, src = ctx.createMediaElementSource(video), out = ctx.createGain(); out.gain.value = 1;
+    src.connect(out); out.connect(ctx.destination);
+    Object.assign(state, { outGain: out, capSrc: src });
+  }
+}
+async function ensureCaptureNode() {
+  if (state.capNode) return;
+  const ctx = state.audioCtx;
+  if (ctx.audioWorklet) {
+    try {
+      const url = URL.createObjectURL(new Blob([WORKLET_SRC], { type: 'text/javascript' }));
+      await ctx.audioWorklet.addModule(url);
+      const node = new AudioWorkletNode(ctx, 'cap', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1] });
+      node.port.onmessage = e => onCaptured(e.data);
+      node.connect(state.capSink);
+      state.capNode = node; log('Audio capture ready (worklet, ' + ctx.sampleRate + ' Hz).'); return;
+    } catch (e) { log('AudioWorklet unavailable (' + e.message + '); using the older capture path.'); }
+  }
+  const proc = ctx.createScriptProcessor(16384, 2, 1);
+  proc.onaudioprocess = e => {
+    const b = e.inputBuffer, n = b.length, ch = b.numberOfChannels, out = new Float32Array(n);
+    for (let c = 0; c < ch; c++) { const d = b.getChannelData(c); for (let i = 0; i < n; i++) out[i] += d[i] / ch; }
+    onCaptured(out);
+  };
+  proc.connect(state.capSink);
+  state.capNode = proc; log('Audio capture ready (' + ctx.sampleRate + ' Hz).');
+}
+function connectCaptureSource(src) {
+  if (state.capFrom === src) return;
+  if (state.capFrom) { try { state.capFrom.disconnect(state.capNode); } catch (e) {} }
+  if (src) src.connect(state.capNode);
+  state.capFrom = src;
+}
+function startCapture() {
+  const ctx = state.audioCtx;
+  state.cap = { active: true, finished: false, ratio: ctx.sampleRate / SR, phase: 0, last: 0, originSec: 0,
+    buf: new Float32Array(Math.ceil((Math.max(state.duration, 60) + 10) * SR)), total: 0, sentUpTo: 0, offset0: null };
+}
+function capAppend(arr) {
+  const cap = state.cap, need = cap.total + arr.length;
+  if (need > cap.buf.length) { const nb = new Float32Array(Math.max(need, cap.buf.length * 2)); nb.set(cap.buf.subarray(0, cap.total)); cap.buf = nb; }
+  cap.buf.set(arr, cap.total); cap.total = need;
+}
+function onCaptured(inp) {
+  const cap = state.cap; if (!cap || !cap.active || !inp || !inp.length) return;
+  if (video.paused || video.ended || video.readyState < 3 || !(video.currentTime > 0)) return;
+  const ratio = cap.ratio, n = inp.length; let pos = cap.phase, k = 0;
+  const out = new Float32Array(Math.ceil(n / ratio) + 2);
+  while (pos < n - 1) {
+    let v;
+    if (pos < 0) v = cap.last + (inp[0] - cap.last) * (pos + 1);
+    else { const i = Math.floor(pos), f = pos - i; v = inp[i] + (inp[i + 1] - inp[i]) * f; }
+    out[k++] = v; pos += ratio;
+  }
+  cap.phase = pos - n; cap.last = inp[n - 1];
+  capAppend(out.subarray(0, k));
+  const mediaSamples = mediaNow() * SR;
+  if (cap.offset0 == null) {
+    cap.offset0 = mediaSamples - cap.total;
+    const ctx = state.audioCtx, latency = (ctx.baseLatency || 0) + (ctx.outputLatency || 0);
+    cap.originSec = Math.max(0, cap.offset0 / SR - latency);
+  } else { const drift = (mediaSamples - cap.total) - cap.offset0; if (drift > 0.15 * SR) capAppend(new Float32Array(Math.floor(drift - 0.05 * SR))); }
+  maybeDispatch(false);
+}
+function maybeDispatch(final) {
+  const cap = state.cap; if (!cap) return;
+  while (cap.total - cap.sentUpTo >= 29 * SR) {
+    const cut = quietestCut(cap.buf, cap.sentUpTo + 23 * SR, cap.sentUpTo + 29 * SR);
+    enqueueBlock(cap.sentUpTo, cut, cap.buf); cap.sentUpTo = cut;
+  }
+  if (final && cap.total - cap.sentUpTo >= 0.5 * SR) { enqueueBlock(cap.sentUpTo, cap.total, cap.buf); cap.sentUpTo = cap.total; }
+}
+function enqueueBlock(a, b, buf) {
+  state.asrQueue.push({ a, b, origin: state.cap ? (state.cap.originSec || 0) : 0, audio: buf.slice(a, b) });
+  pumpAsrQueue();
+}
+// Audio for a span of media time, from whichever store this run used.
+function audioFor(t0, t1) {
+  if (state.pcm) { const n = state.pcm.length; return { buf: state.pcm, a: clamp(Math.floor(t0 * SR), 0, n), b: clamp(Math.ceil(t1 * SR), 0, n) }; }
+  if (state.cap && state.cap.total > 0) { const o = state.cap.originSec || 0, n = state.cap.total; return { buf: state.cap.buf, a: clamp(Math.floor((t0 - o) * SR), 0, n), b: clamp(Math.ceil((t1 - o) * SR), 0, n) }; }
+  return null;
+}
+
+/* ---------- transcription engine: a worker when the browser allows one, otherwise in the page ---------- */
+function makeWorker() {
+  const src = document.getElementById('asr-worker').textContent;
+  const url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+  const w = new Worker(url, { type: 'module' });
+  w.onmessage = e => {
+    const m = e.data || {};
+    if (m.type === 'log') log(m.text);
+    else if (m.type === 'progress') {
+      if (m.status === 'progress' || m.progress != null) { els.sAsr.textContent = 'downloading ' + Math.round(m.progress || 0) + '%'; els.pAsr.style.width = (m.progress || 0) + '%'; }
+      else if (m.status) els.sAsr.textContent = m.status;
+    } else if (m.id != null && state.waiters.has(m.id)) {
+      const wt = state.waiters.get(m.id); state.waiters.delete(m.id);
+      if (m.type === 'error') wt.rej(new Error(m.text)); else wt.res(m);
+    } else if (m.type === 'error') log('Transcription worker: ' + m.text, true);
+  };
+  w.onerror = e => {
+    const err = new Error('worker error: ' + (e && e.message ? e.message : 'unknown'));
+    state.waiters.forEach(wt => wt.rej(err)); state.waiters.clear();
+  };
+  return w;
+}
+function ask(msg, transfer) {
+  if (!state.worker) state.worker = makeWorker();
+  const id = ++state.seq;
+  return new Promise((res, rej) => { state.waiters.set(id, { res, rej }); state.worker.postMessage(Object.assign({ id }, msg), transfer || []); });
+}
+function normaliseChunks(out, offset, seconds) {
+  const chunks = (out && out.chunks ? out.chunks : []).map(c => {
+    const ts = c.timestamp || [0, 0], s = (ts[0] == null ? 0 : ts[0]), en = (ts[1] == null ? s : ts[1]);
+    return { text: c.text || '', start: s + offset, end: Math.max(s, en) + offset };
+  });
+  if (!chunks.length && out && out.text) chunks.push({ text: out.text, start: offset, end: offset + seconds });
+  return chunks;
+}
+async function inlineLoad(model, devicePref) {
+  if (!engine.tf) { engine.tf = await import(TF_URL); engine.tf.env.allowLocalModels = false; }
+  const key = model + '|' + devicePref;
+  if (engine.pipe && engine.key === key) return;
+  if (engine.pipe) { try { await engine.pipe.dispose(); } catch (e) {} engine.pipe = null; }
+  const progress_callback = p => { if (p && p.status === 'progress') { els.sAsr.textContent = 'downloading ' + Math.round(p.progress || 0) + '%'; els.pAsr.style.width = (p.progress || 0) + '%'; } };
+  const candidates = devicePref === 'wasm' ? ['wasm'] : ['webgpu', 'wasm']; let lastErr = null;
+  for (const device of candidates) {
+    if (device === 'webgpu' && !navigator.gpu) continue;
+    try {
+      const opts = { device, progress_callback };
+      if (device === 'webgpu') opts.dtype = { encoder_model: 'fp32', decoder_model_merged: 'q4' };
+      engine.pipe = await engine.tf.pipeline('automatic-speech-recognition', model, opts);
+      engine.key = key; engine.device = device; return;
+    } catch (e) { lastErr = e; log((device === 'webgpu' ? 'WebGPU' : 'CPU') + ' load failed: ' + e.message); }
+  }
+  throw lastErr || new Error('No compute backend available.');
+}
+async function engineLoad(model, device) {
+  const key = model + '|' + device;
+  if (engine.key === key && (engine.mode === 'worker' ? state.worker : engine.pipe)) return;
+  if (engine.loading) return engine.loading;
+  engine.loading = (async () => {
+    if (engine.mode !== 'inline') {
+      try {
+        const r = await ask({ type: 'load', model, device });
+        engine.mode = 'worker'; engine.key = key; engine.device = r.device; return;
+      } catch (e) {
+        if (state.stopped) throw e;
+        log('Background transcription is not available here (' + e.message + '); running it in the page instead.');
+        if (state.worker) { try { state.worker.terminate(); } catch (_) {} state.worker = null; }
+        engine.mode = 'inline';
+      }
+    }
+    await inlineLoad(model, device);
+  })();
+  try { await engine.loading; } finally { engine.loading = null; }
+}
+async function engineTranscribe(blk) {
+  const { model, device, language } = state.asrParams;
+  await engineLoad(model, device);
+  const offset = blk.a / SR + (blk.origin || 0), seconds = (blk.b - blk.a) / SR;
+  if (engine.mode === 'worker') return ask({ type: 'transcribe', audio: blk.audio, offset, seconds, model, device, language }, [blk.audio.buffer]);
+  const opts = { return_timestamps: 'word', task: 'transcribe' };
+  if (language && language !== 'auto' && !/\.en(_|-|$)/.test(model)) opts.language = language;
+  let out;
+  try { out = await engine.pipe(blk.audio, opts); }
+  catch (e) { log('Word timing unavailable for this model, using phrase timing instead. (' + e.message + ')'); opts.return_timestamps = true; out = await engine.pipe(blk.audio, opts); }
+  return { chunks: normaliseChunks(out, offset, seconds) };
+}
+
+async function pumpAsrQueue() {
+  if (state.asrPumping) return;
+  if (engine.mode === 'inline' && state.cap && state.cap.active) return;
+  state.asrPumping = true;
+  try {
+    while (state.asrQueue.length && !state.stopped) {
+      if (engine.mode === 'inline' && state.cap && state.cap.active) break;
+      const blk = state.asrQueue.shift();
+      els.sAsr.textContent = state.capMode ? 'transcribing block ' + (state.blocksDone + 1) + (state.asrQueue.length ? ' (' + state.asrQueue.length + ' waiting)' : '') : 'transcribing ' + (state.blocksDone + 1) + ' of ' + state.blocksTotal;
+      try {
+        const r = await engineTranscribe(blk);
+        let added = 0;
+        for (const ch of r.chunks) {
+          const text = String(ch.text || '').trim(); if (!text) continue;
+          state.words.push({ text, start: ch.start, end: Math.max(ch.end, ch.start + 0.05), speaker: 'pending', lip: null }); added++;
+        }
+        state.words.sort((x, y) => x.start - y.start);
+        if (!added && !state.words.length) log('No words came back for the first block. If the whole transcript stays empty on a phone, check that the ringer switch is not on silent and try again.');
+        state.blocksDone++;
+        els.pAsr.style.width = (state.capMode ? (state.cap ? 100 * blk.b / Math.max(state.cap.total, blk.b) : 0) : 100 * state.blocksDone / Math.max(1, state.blocksTotal)) + '%';
+        rebuild();
+      } catch (e) {
+        if (state.stopped) break;
+        log('Transcription failed for the block at ' + fmtTime(blk.a / SR) + ': ' + e.message, true);
+      }
+    }
+  } finally { state.asrPumping = false; }
+  const sourceFinished = state.capMode ? (state.cap && state.cap.finished) : state.decodeFinished;
+  if (!state.asrQueue.length && sourceFinished && !state.asrDone) {
+    state.asrDone = true; els.sAsr.textContent = 'done'; els.pAsr.style.width = '100%';
+    log('Transcription finished: ' + state.words.length + ' words.');
+    finalizeIfDone();
+  }
+}
+
+async function runAsr() {
+  state.asrDone = false; state.asrQueue = []; state.blocksDone = 0; state.blocksTotal = 0; state.decodeFinished = false;
+  state.asrParams = { model: modelId(), device: els.device.value, language: els.lang.value };
+  els.sAsr.textContent = 'loading model';
+  if (state.capMode) {
+    if (state.isLive && !state.liveSrc) { els.sAsr.textContent = 'no audio'; state.asrDone = true; finalizeIfDone(); return; }
+    await engineLoad(state.asrParams.model, state.asrParams.device);
+    log('Transcriber ready on ' + (engine.device === 'webgpu' ? 'WebGPU' : 'CPU') + (engine.mode === 'inline' ? ' (in page)' : '') + '.');
+    if (state.running) els.sAsr.textContent = 'listening';
+    pumpAsrQueue();
+    return;
+  }
+  const src = els.fileAudio.files[0] || state.file;
+  els.sAsr.textContent = 'decoding audio';
+  let pcm;
+  try { pcm = await decodeAudio(src); }
+  catch (e) {
+    log('The browser could not decode this file’s audio (' + (e.message || 'unsupported container') + '). Switch "How to get at the audio" to capture in Settings, or add a separate audio file.', true);
+    els.sAsr.textContent = 'no audio'; state.asrDone = true; finalizeIfDone(); return;
+  }
+  if (!state.running) return;
+  state.pcm = pcm;
+  if (!state.duration) state.duration = pcm.length / SR;
+  const blocks = planBlocks(pcm);
+  log('Audio ' + fmtTime(pcm.length / SR) + ' long, split into ' + blocks.length + ' blocks for transcription.');
+  await engineLoad(state.asrParams.model, state.asrParams.device);
+  log('Transcriber ready on ' + (engine.device === 'webgpu' ? 'WebGPU' : 'CPU') + (engine.mode === 'inline' ? ' (in page)' : '') + '.');
+  state.blocksTotal = blocks.length;
+  for (const [a, b] of blocks) state.asrQueue.push({ a, b, audio: pcm.slice(a, b) });
+  state.decodeFinished = true;
+  await pumpAsrQueue();
+}
+
+/* ---------- voice: pitch and loudness per line ---------- */
+function voiceFeatures(t0, t1) {
+  const key = t0.toFixed(2) + '|' + t1.toFixed(2);
+  if (state.voiceCache.has(key)) return state.voiceCache.get(key);
+  const sl = audioFor(t0, t1); if (!sl || sl.b - sl.a < 0.4 * SR) return null;
+  const { buf, a, b } = sl, n8 = (b - a) >> 1, x = new Float32Array(n8);
+  for (let i = 0; i < n8; i++) x[i] = (buf[a + 2 * i] + buf[a + 2 * i + 1]) * 0.5;   // 8 kHz is plenty for pitch
+  const F = 320, H = 80, minLag = 20, maxLag = 114, W = F - maxLag;                 // 70 to 400 Hz
+  const nf = Math.floor((n8 - F) / H) + 1;
+  if (nf < 5) { state.voiceCache.set(key, null); return null; }
+  const en = new Float32Array(nf); let emean = 0;
+  for (let f = 0; f < nf; f++) { const o = f * H; let s = 0; for (let i = 0; i < F; i++) s += x[o + i] * x[o + i]; en[f] = s / F; emean += en[f]; }
+  emean /= nf;
+  const gate = Math.max(1e-7, emean * 0.1), y = new Float32Array(F), rs = new Float32Array(maxLag + 2);
+  const f0s = [], dbs = [];
+  for (let f = 0; f < nf; f++) {
+    if (en[f] < gate) continue;
+    const o = f * H; let m = 0; for (let i = 0; i < F; i++) m += x[o + i]; m /= F;
+    for (let i = 0; i < F; i++) y[i] = x[o + i] - m;
+    let e0 = 0; for (let i = 0; i < W; i++) e0 += y[i] * y[i]; if (e0 < 1e-9) continue;
+    let el = 0; for (let i = minLag; i < minLag + W; i++) el += y[i] * y[i];
+    let rmax = -1, lmax = minLag;
+    for (let l = minLag; l <= maxLag; l++) {
+      if (l > minLag) el += y[l + W - 1] * y[l + W - 1] - y[l - 1] * y[l - 1];
+      let c = 0; for (let i = 0; i < W; i++) c += y[i] * y[i + l];
+      const r = c / Math.sqrt(e0 * el + 1e-12); rs[l] = r; if (r > rmax) { rmax = r; lmax = l; }
+    }
+    if (rmax < 0.6) continue;
+    let lag = lmax;
+    for (let l = minLag + 1; l < lmax; l++) if (rs[l] >= 0.9 * rmax && rs[l] >= rs[l - 1] && rs[l] >= rs[l + 1]) { lag = l; break; }
+    let lf = lag;
+    if (lag > minLag && lag < maxLag) { const a1 = rs[lag - 1], b1 = rs[lag], c1 = rs[lag + 1], d = a1 - 2 * b1 + c1; if (Math.abs(d) > 1e-9) lf = lag + 0.5 * (a1 - c1) / d; }
+    f0s.push(8000 / lf); dbs.push(10 * Math.log10(en[f] + 1e-12));
+  }
+  const res = { f0: null, f0var: null, db: dbs.length ? dbs.reduce((p, q) => p + q, 0) / dbs.length : null, voiced: f0s.length / nf };
+  if (f0s.length >= 10) { const med = median(f0s); res.f0 = med; res.f0var = (quantile(f0s, 0.75) - quantile(f0s, 0.25)) / med; }
+  state.voiceCache.set(key, res);
+  return res;
+}
+async function analyseVoice() {
+  const run = ++state.voiceRun;
+  const todo = state.utterances.filter(u => u.speaker === 'subject' && !state.voiceCache.has(u.start.toFixed(2) + '|' + u.end.toFixed(2)));
+  let n = 0;
+  for (const u of todo) {
+    if (run !== state.voiceRun) return;
+    voiceFeatures(u.start, u.end);
+    if (++n % 4 === 0) { els.sAsr.textContent = 'measuring voice ' + n + ' of ' + todo.length; await new Promise(r => setTimeout(r, 0)); }
+  }
+  if (run !== state.voiceRun) return;
+  state.voiceReady = true;
+  els.sAsr.textContent = state.stopped ? 'stopped' : 'done';
+  rebuild();
+  if (todo.length) log('Voice measured on ' + todo.length + ' lines.');
+}
+
+/* ---------- words: hedges, pronouns, recall, conflicts ---------- */
+const STOP = new Set(('a an the and or but so if then than that this these those i me my mine we us our you your he him his she her it its they them their what which who whom whose is am are was were be been being do does did have has had having will would shall should can could may might must of to in on at by for with about from as into like through after over between out against during without before under around among up down off yes yeah uh um ok okay well just really very also too there here get got go going went come came say said know think thing things way lot kind sort mean').split(' '));
+const NEG = new Set(['not', 'no', 'never', 'nothing', 'nobody', 'none', 'nowhere', 'neither', 'nor', 'cannot']);
+const NUMWORDS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90, hundred: 100, thousand: 1000, once: 1, twice: 2 };
+const I1 = new Set(['i', 'me', 'my', 'mine', 'myself', "i'm", "i've", "i'd", "i'll"]);
+const P3 = new Set(['he', 'she', 'they', 'him', 'her', 'them', 'his', 'their', 'theirs', 'hers', "he's", "she's", "they're", "they've"]);
+const RX = {
+  hedge: /\b(i think|i guess|i believe|i suppose|kind of|sort of|maybe|probably|perhaps|possibly|i mean|you know|basically|actually|like i said|as far as i know|to my knowledge|something like|or so|roughly|approximately|more or less|if i'm honest|i would say|i'd say)\b/g,
+  honest: /\b(to be honest|honestly|to tell you the truth|to tell the truth|truthfully|i swear|believe me|trust me|frankly|i'm telling you|i would never|why would i|no reason to lie|god's honest|hand on heart|i promise)\b/g,
+  recall: /\b(i don't remember|i do not remember|i don't recall|i do not recall|i can't remember|i cannot remember|i can't recall|not that i remember|not that i recall|i'm not sure|i am not sure|i have no idea|i don't know)\b/g,
+  nonanswer: /^(what do you mean|can you repeat|could you repeat|why do you ask|why are you asking|what are you asking|that's a good question|define|what kind of question)/,
+};
+const FILLERS = /^(um+|uh+|uhm+|er+|erm+|hmm+|mm+|ah+|eh+)$/i;
+const toks = text => (text.toLowerCase().replace(/[’‘]/g, "'").match(/[a-z0-9']+/g) || []);
+const isNeg = t => NEG.has(t) || /n't$/.test(t);
+const stem = w => w.length > 4 ? w.replace(/'s$/, '').replace(/(ing|ed|es|s)$/, '') : w.replace(/'s$/, '');
+function numVal(t) { if (/^\d+(\.\d+)?$/.test(t)) return Number(t); return NUMWORDS[t] == null ? null : NUMWORDS[t]; }
+function countRx(rx, text) { rx.lastIndex = 0; let n = 0; while (rx.exec(text)) n++; return n; }
+
+function clausesOf(u, ui) {
+  const out = [];
+  if (/\?\s*$/.test(u.text)) return out;
+  const parts = u.text.split(/[.?!;,]+|\b(?:but|because|although|though|then|so|whereas|except)\b/i);
+  let wordIdx = u.first;
+  for (const p of parts) {
+    const tk = toks(p); if (tk.length < 3) { wordIdx += tk.length; continue; }
+    const content = new Set(), nums = new Set(); let neg = false;
+    for (const t of tk) { if (isNeg(t)) { neg = true; continue; } const nv = numVal(t); if (nv != null) { nums.add(nv); continue; } if (!STOP.has(t) && t.length > 2) content.add(stem(t)); }
+    if (content.size >= 2) out.push({ ui, text: p.trim(), neg, content, nums });
+    wordIdx += tk.length;
+  }
+  return out;
+}
+function findConflicts(utts) {
+  const cl = []; utts.forEach((u, i) => { if (u.speaker === 'subject') cl.push(...clausesOf(u, i)); });
+  const index = new Map();
+  cl.forEach((c, i) => c.content.forEach(t => { if (!index.has(t)) index.set(t, []); index.get(t).push(i); }));
+  const seen = new Set(), flags = [];
+  for (let i = 0; i < cl.length && flags.length < 60; i++) {
+    const shared = new Map();
+    cl[i].content.forEach(t => { for (const j of index.get(t)) if (j > i) shared.set(j, (shared.get(j) || 0) + 1); });
+    for (const [j, n] of shared) {
+      if (n < 2) continue;
+      const jacc = n / (cl[i].content.size + cl[j].content.size - n); if (jacc < 0.4) continue;
+      const A = cl[i], B = cl[j]; let kind = null;
+      if (A.neg !== B.neg) kind = 'one clause is negated, the other is not';
+      else if (A.nums.size && B.nums.size && ![...A.nums].some(v => B.nums.has(v))) kind = 'the numbers differ';
+      if (!kind) continue;
+      const pk = A.ui + ':' + B.ui; if (seen.has(pk) || A.ui === B.ui) continue; seen.add(pk);
+      flags.push({ a: A.ui, b: B.ui, ta: A.text, tb: B.text, kind });
+    }
+  }
+  return flags;
+}
+
+/* ---------- measures ---------- */
+const MEASURES = [
+  { k: 'bpm',   name: 'blink rate',      fmt: v => v.toFixed(0) + '/min',  dir: 1 },
+  { k: 'down',  name: 'eyes down',       fmt: v => v.toFixed(0) + '%',     dir: 1 },
+  { k: 'aside', name: 'eyes aside',      fmt: v => v.toFixed(0) + '%',     dir: 1 },
+  { k: 'gaze',  name: 'eye movement',    fmt: v => v.toFixed(2) + ' eye widths/s', dir: 1 },
+  { k: 'head',  name: 'head movement',   fmt: v => v.toFixed(2) + ' face widths/s', dir: 1 },
+  { k: 'tense', name: 'facial tension',  fmt: v => v.toFixed(2),           dir: 1 },
+  { k: 'f0',    name: 'voice pitch',     fmt: v => v.toFixed(0) + ' Hz',   dir: 1 },
+  { k: 'f0var', name: 'pitch variation', fmt: v => (v * 100).toFixed(0) + '%', dir: 1 },
+  { k: 'db',    name: 'loudness',        fmt: v => v.toFixed(1) + ' dB',   dir: 0 },
+  { k: 'wps',   name: 'speech rate',     fmt: v => v.toFixed(1) + ' words/s', dir: 0 },
+  { k: 'hes',   name: 'hesitation',      fmt: v => v.toFixed(1) + ' per 10 words', dir: 1 },
+  { k: 'lat',   name: 'response delay',  fmt: v => v.toFixed(1) + ' s',    dir: 1 },
+];
+function chipFor(m, u) {
+  const v = u[m.k], z = u.z[m.k];
+  switch (m.k) {
+    case 'bpm': return u.ratio != null ? 'blinks ×' + u.ratio.toFixed(1) : 'blinks up';
+    case 'down': return 'eyes down ' + v.toFixed(0) + '%';
+    case 'aside': return 'eyes aside ' + v.toFixed(0) + '%';
+    case 'gaze': return 'eyes moving';
+    case 'head': return 'head moving';
+    case 'tense': return 'tense face';
+    case 'f0': { const b = state.baseStats.f0; return b ? 'pitch +' + Math.round((v / b.mean - 1) * 100) + '%' : 'pitch up'; }
+    case 'f0var': return 'pitch varies';
+    case 'db': return z > 0 ? 'louder' : 'quieter';
+    case 'wps': return z > 0 ? 'speaking fast' : 'speaking slow';
+    case 'hes': return 'hesitant';
+    case 'lat': return 'delayed ' + v.toFixed(1) + ' s';
+  }
+  return m.name;
+}
+
+/* ---------- analysis: series, attribution, utterances, baseline ---------- */
+function scheduleRebuild() { if (state.running) return; clearTimeout(state._rb); state._rb = setTimeout(rebuild, 60); }
+function rateAt(t) {
+  if (!state.series.length) return null;
+  const i = clamp(Math.round(t / 0.5), 0, state.series.length - 1);
+  return state.series[i] ? state.series[i].bpm : null;
+}
+function lipScoreFor(w) {
+  const a = w.start - 0.15, b = w.end + 0.15;
+  const i0 = lowerBound(state.times, a), i1 = lowerBound(state.times, b);
+  let n = 0, s1 = 0, s2 = 0;
+  for (let i = i0; i < i1; i++) { const s = state.samples[i]; if (!s.face) continue; n++; s1 += s.lip; s2 += s.lip * s.lip; }
+  if (n < 3) return null;
+  const m = s1 / n; return Math.sqrt(Math.max(0, s2 / n - m * m));
+}
+function otsu(vals) {
+  if (vals.length < 12) return null;
+  let min = Infinity, max = -Infinity; for (const v of vals) { if (v < min) min = v; if (v > max) max = v; }
+  if (max - min < 1e-6) return null;
+  const bins = 64, hist = new Array(bins).fill(0);
+  vals.forEach(v => { hist[Math.min(bins - 1, Math.floor((v - min) / (max - min) * bins))]++; });
+  let sumAll = 0; for (let i = 0; i < bins; i++) sumAll += i * hist[i];
+  let wB = 0, sumB = 0, best = -1, thr = 0;
+  for (let i = 0; i < bins; i++) {
+    wB += hist[i]; if (!wB) continue; const wF = vals.length - wB; if (!wF) break;
+    sumB += i * hist[i]; const mB = sumB / wB, mF = (sumAll - sumB) / wF, bc = wB * wF * (mB - mF) ** 2;
+    if (bc > best) { best = bc; thr = i; }
+  }
+  return min + (thr + 1) / bins * (max - min);
+}
+function mergeSpans(spans) {
+  const s = spans.slice().sort((a, b) => a[0] - b[0]), out = [];
+  for (const sp of s) { const last = out[out.length - 1]; if (last && sp[0] <= last[1]) last[1] = Math.max(last[1], sp[1]); else out.push([sp[0], sp[1]]); }
+  return out;
+}
+
+function rebuild() {
+  const win = Number(els.rateWin.value) || 10, lipThr = Number(els.lipThr.value) || 0.008, gthr = Number(els.gazeThr.value) || 0.35;
+  const S = state.samples, T = state.times, N = S.length;
+  // prefix sums over frames: visible time, open-eyed time, time looking down or aside, iris path
+  const preVis = new Float64Array(N + 1), preOpen = new Float64Array(N + 1), preDown = new Float64Array(N + 1), preAside = new Float64Array(N + 1), preGaze = new Float64Array(N + 1);
+  for (let i = 0; i < N; i++) {
+    const s = S[i], dt = i ? clamp(T[i] - T[i - 1], 0, 0.2) : 0, open = s.face && s.blink < 0.3;
+    preVis[i + 1] = preVis[i] + (s.face ? dt : 0);
+    preOpen[i + 1] = preOpen[i] + (open ? dt : 0);
+    preDown[i + 1] = preDown[i] + (open && s.gd > gthr ? dt : 0);
+    preAside[i + 1] = preAside[i] + (open && s.gh > gthr ? dt : 0);
+    let g = 0;
+    if (open && i && S[i - 1].face && S[i - 1].blink < 0.3) { const d = Math.hypot(s.ix - S[i - 1].ix, s.iy - S[i - 1].iy); if (d < 0.5) g = d; }
+    preGaze[i + 1] = preGaze[i] + g;
+  }
+  const idx = t => lowerBound(T, t), span = (pre, a, b) => pre[idx(b)] - pre[idx(a)];
+  const bt = state.blinks.map(b => b.t), blinksIn = (a, b) => lowerBound(bt, b) - lowerBound(bt, a);
+  const rate = (a, b) => { const vis = span(preVis, a, b); if (vis < 0.5 * (b - a) || vis < 1) return null; return blinksIn(a, b) / vis * 60; };
+  // 1. sliding series at 0.5 s steps
+  const Tend = Math.max(state.analysedUntil, 0), series = [], sDown = [], sGaze = [];
+  for (let t = 0; t <= Tend + 1e-6; t += 0.5) {
+    series.push({ t, bpm: rate(t - win / 2, t + win / 2) });
+    const open = span(preOpen, t - 2, t + 2);
+    sDown.push({ t, v: open >= 1 ? span(preDown, t - 2, t + 2) / open * 100 : null });
+    sGaze.push({ t, v: open >= 1 ? span(preGaze, t - 2, t + 2) / open : null });
+  }
+  state.series = series; state.sDown = sDown; state.sGaze = sGaze;
+  const gaps = []; for (let i = 1; i < N; i++) if (T[i] - T[i - 1] > 0.5) gaps.push([T[i - 1], T[i]]);
+  state.gaps = gaps;
+  const valid = series.map(p => p.bpm).filter(v => v != null);
+  const sorted = [...valid].sort((a, b) => a - b);
+  // 2. attribute words
+  const words = state.words;
+  for (const w of words) {
+    w.lip = lipScoreFor(w);
+    if (w.lip == null) w.speaker = (w.end > state.analysedUntil + 0.3 && !state.faceDone) ? 'pending' : 'unknown';
+    else w.speaker = w.lip >= lipThr ? 'subject' : 'off';
+  }
+  const lab = words.map(w => w.speaker);
+  for (let i = 1; i < words.length - 1; i++) {
+    const a = lab[i - 1], b = lab[i], c = lab[i + 1];
+    if (a === c && a !== b && (a === 'subject' || a === 'off') && (b === 'subject' || b === 'off')) words[i].speaker = a;
+  }
+  // 3. group into lines
+  const utts = []; let cur = null;
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i], prev = words[i - 1], gap = prev ? w.start - prev.end : 0;
+    const sentenceBreak = prev && /[.?!]["')\]]?$/.test(prev.text) && gap > 0.45;
+    if (!cur || cur.speaker !== w.speaker || gap > 1.2 || sentenceBreak || (w.end - cur.start > 25 && gap > 0.25)) {
+      cur = { speaker: w.speaker, start: w.start, end: w.end, words: [], first: i }; utts.push(cur);
+    }
+    cur.words.push(w); cur.end = w.end; cur.last = i;
+  }
+  // 4. per-line measures
+  utts.forEach((u, k) => {
+    const dur = Math.max(0.3, u.end - u.start), mid = (u.start + u.end) / 2, sp = Math.max(dur, 6);
+    u.key = uKey(u); u.text = u.words.map(w => w.text).join(' '); u.n = u.words.length;
+    u.bpm = rate(mid - sp / 2, mid + sp / 2);
+    u.blinksIn = blinksIn(u.start, u.end);
+    const open = span(preOpen, u.start, u.end), vis = span(preVis, u.start, u.end);
+    u.down = open >= 0.5 ? span(preDown, u.start, u.end) / open * 100 : null;
+    u.aside = open >= 0.5 ? span(preAside, u.start, u.end) / open * 100 : null;
+    u.gaze = open >= 0.5 ? span(preGaze, u.start, u.end) / open : null;
+    let path = 0, prevS = null, fwSum = 0, fwN = 0, tenSum = 0;
+    const i0 = idx(u.start), i1 = idx(u.end);
+    for (let i = i0; i < i1; i++) { const s = S[i]; if (!s.face) { prevS = null; continue; } if (prevS) path += Math.hypot(s.nx - prevS.nx, s.ny - prevS.ny); prevS = s; fwSum += s.fw; fwN++; tenSum += s.ten; }
+    u.head = fwN && vis > 0.5 ? (path / (fwSum / fwN)) / vis : null;
+    u.tense = fwN ? tenSum / fwN : null;
+    u.wps = u.n / dur;
+    let pauses = 0; for (let i = 1; i < u.words.length; i++) if (u.words[i].start - u.words[i - 1].end > 0.35) pauses++;
+    u.fillers = u.words.filter(w => FILLERS.test(w.text.replace(/[^a-z]/gi, ''))).length;
+    u.pauses = pauses; u.hes = (u.fillers + pauses) / u.n * 10;
+    const prev = utts[k - 1];
+    u.lat = (u.speaker === 'subject' && prev && prev.speaker === 'off' && u.start - prev.end < 10) ? Math.max(0, u.start - prev.end) : null;
+    u.f0 = u.f0var = u.db = null;
+    if (u.speaker === 'subject') {
+      const vf = state.voiceReady ? voiceFeatures(u.start, u.end) : state.voiceCache.get(u.start.toFixed(2) + '|' + u.end.toFixed(2));
+      if (vf) { u.f0 = vf.f0; u.f0var = vf.f0var; u.db = vf.db; }
+    }
+    const low = u.text.toLowerCase().replace(/[’‘]/g, "'"), tk = toks(u.text);
+    u.hedges = countRx(RX.hedge, low); u.honest = countRx(RX.honest, low); u.recall = countRx(RX.recall, low);
+    u.i1 = tk.length ? tk.filter(t => I1.has(t)).length / tk.length * 100 : null;
+    u.p3 = tk.length ? tk.filter(t => P3.has(t)).length / tk.length * 100 : null;
+    u.nonanswer = RX.nonanswer.test(low);
+    u.echo = false;
+    if (u.speaker === 'subject' && prev && prev.speaker === 'off') {
+      const q = new Set(toks(prev.text).filter(t => !STOP.has(t) && t.length > 2).map(stem));
+      if (q.size >= 3) { const a = new Set(tk.filter(t => !STOP.has(t) && t.length > 2).map(stem)); let n = 0; q.forEach(t => { if (a.has(t)) n++; }); if (n / q.size >= 0.6 && u.n <= prev.n + 2) u.echo = true; }
+    }
+    u.z = {}; u.load = null; u.ratio = null; u.flags = [];
+  });
+  // 5. control set: the subject's own easy answers
+  const mode = els.baseMode.value, subj = utts.filter(u => u.speaker === 'subject');
+  const ctlKeys = new Set();
+  if (mode === 'manual') { for (const [k, v] of state.marks) if (v) ctlKeys.add(k); }
+  else if (mode === 'mark' && state.baselineEnd != null) { for (const u of subj) if (u.start < state.baselineEnd) ctlKeys.add(u.key); }
+  else { let acc = 0; const lim = mode === 'mark' ? 60 : Number(mode); for (const u of subj) { if (acc >= lim) break; ctlKeys.add(u.key); acc += u.end - u.start; } }
+  state.controlKeys = ctlKeys;
+  const ctl = subj.filter(u => ctlKeys.has(u.key)), ctlStats = subj.filter(u => ctlKeys.has(u.key) && u.n >= 3), allStats = subj.filter(u => u.n >= 3);
+  // 6. baseline statistics per measure, and z-scores
+  const stats = {};
+  for (const m of [...MEASURES, { k: 'i1' }, { k: 'p3' }]) {
+    const cv = ctlStats.map(u => u[m.k]).filter(v => v != null), av = allStats.map(u => u[m.k]).filter(v => v != null);
+    let st = null;
+    if (cv.length >= 3) { const [mean, sd] = meanStd(cv); st = { mean, sd, from: 'control' }; }
+    else if (cv.length >= 1 && av.length >= 4) { const [mean] = meanStd(cv), [, sd] = meanStd(av); st = { mean, sd, from: 'control mean' }; }
+    else if (av.length >= 4) { const [mean, sd] = meanStd(av); st = { mean, sd, from: 'all lines' }; }
+    if (st && st.sd < 1e-9) st.sd = Math.max(Math.abs(st.mean) * 0.1, 1e-6);
+    if (st) stats[m.k] = st;
+  }
+  state.baseStats = stats;
+  // blink baseline: rate across the control answers, else the median of the whole recording
+  let nb = 0, visC = 0;
+  for (const [a, b] of mergeSpans(ctl.map(u => [u.start - 2, u.end + 2]))) { visC += span(preVis, a, b); nb += blinksIn(a, b); }
+  if (visC >= 20) { state.baseline = nb / visC * 60; state.baselineSource = 'control'; }
+  else { state.baseline = median(valid); state.baselineSource = 'median'; }
+  state.yMax = Math.max(30, (sorted.length ? sorted[Math.floor(sorted.length * 0.97)] : 0) * 1.15, (state.baseline || 0) * 1.6);
+  for (const u of utts) {
+    u.ratio = (u.bpm != null && state.baseline) ? u.bpm / state.baseline : null;
+    if (u.speaker !== 'subject') continue;
+    let sum = 0, cnt = 0;
+    for (const m of MEASURES) {
+      const st = stats[m.k], v = u[m.k];
+      const z = (st && v != null) ? (v - st.mean) / st.sd : null; u.z[m.k] = z;
+      if (z != null) { sum += Math.min(3, m.dir ? Math.max(0, z) : Math.abs(z)); cnt++; }
+    }
+    for (const k of ['i1', 'p3']) { const st = stats[k]; u.z[k] = (st && u[k] != null) ? (u[k] - st.mean) / st.sd : null; }
+    u.load = cnt >= 3 ? sum / cnt : null;
+  }
+  // strip statistics for the timeline, from the control spans where possible
+  const ctlSpans = mergeSpans(ctl.map(u => [u.start, u.end]));
+  const inCtl = t => ctlSpans.some(([a, b]) => t >= a && t <= b);
+  const stripStat = ser => { let pts = ser.filter(p => p.v != null && inCtl(p.t)).map(p => p.v); if (pts.length < 8) pts = ser.filter(p => p.v != null).map(p => p.v); if (pts.length < 4) return null; const [mean, sd] = meanStd(pts); return { mean, sd: Math.max(sd, 1e-6) }; };
+  state.stripStats = { down: stripStat(sDown), gaze: stripStat(sGaze) };
+  // 7. conflicts between the subject's own statements (after the run, English only)
+  state.flagsList = (!state.running && /^(en|auto)$/.test(els.lang.value)) ? findConflicts(utts) : [];
+  for (const f of state.flagsList) { utts[f.a].flags.push(f.b); utts[f.b].flags.push(f.a); }
+  state.utterances = utts;
+  // speaking vs listening blink rates
+  const sumRate = list => { let n = 0, vis = 0; for (const u of list) { vis += span(preVis, u.start, u.end); n += u.blinksIn; } return vis >= 5 ? n / vis * 60 : null; };
+  state.speakBpm = sumRate(utts.filter(u => u.speaker === 'subject'));
+  state.listenBpm = sumRate(utts.filter(u => u.speaker === 'off'));
+  const ctlSec = ctl.reduce((a, u) => a + (u.end - u.start), 0);
+  els.sBase.textContent = mode === 'mark' && state.baselineEnd != null
+    ? (ctl.length ? 'up to the mark at ' + fmtTime(state.baselineEnd) + ' (' + ctl.length + ' lines, ' + Math.round(ctlSec) + ' s)' : 'mark at ' + fmtTime(state.baselineEnd) + ', no subject speech before it yet')
+    : ctl.length ? (mode === 'manual' ? ctl.length + ' marked lines, ' : 'first ') + Math.round(ctlSec) + ' s of subject speech' + (mode === 'manual' ? '' : ' (' + ctl.length + ' lines)') + (mode === 'mark' ? ', until you set the mark' : '') : (mode === 'manual' ? 'no lines marked yet' : 'waiting for the subject to speak');
+  renderTranscript(); renderFlags(); updateMetrics(); drawTimeline();
+}
+
+/* ---------- rendering: transcript ---------- */
+function zClass(z, dir) {
+  if (z == null) return 'na';
+  const v = dir ? z : Math.abs(z);
+  return v >= 2.5 ? 'z3' : v >= 1.5 ? 'z2' : v >= 0.75 ? 'z1' : '';
+}
+function toggleControl(u) {
+  if (els.baseMode.value !== 'manual') {
+    els.baseMode.value = 'manual';
+    state.marks = new Map(); state.controlKeys.forEach(k => state.marks.set(k, true));
+    log('Baseline switched to the lines you mark; the automatic selection was kept as the starting point.');
+  }
+  state.marks.set(u.key, !state.controlKeys.has(u.key));
+  rebuild();
+}
+function renderTranscript() {
+  const utts = state.utterances;
+  if (!utts.length) { if (!els.transcript.querySelector('.empty')) els.transcript.innerHTML = '<p class="empty">Waiting for the first block of speech.</p>'; state.rowEls = []; state.wordEls = []; els.key.hidden = true; return; }
+  els.key.hidden = false;
+  const frag = document.createDocumentFragment(), rows = [], wordEls = new Array(state.words.length);
+  const yMax = state.yMax, base = state.baseline, stats = state.baseStats;
+  utts.forEach((u, idx) => {
+    const isCtl = state.controlKeys.has(u.key);
+    const row = document.createElement('div');
+    row.className = 'row ' + (u.speaker === 'subject' ? 'subject' : u.speaker === 'off' ? 'off' : 'unknown') + (isCtl ? ' control' : '');
+    row.dataset.i = idx;
+    const bpmPct = u.bpm == null ? 0 : clamp(u.bpm / yMax * 100, 0, 100);
+    const basePct = base == null ? null : clamp(base / yMax * 100, 0, 100);
+    const above = (basePct != null && bpmPct > basePct) ? `<i class="above" style="left:${basePct}%;width:${bpmPct - basePct}%"></i>` : '';
+    const baseTick = basePct == null ? '' : `<i class="base" style="left:${basePct}%"></i>`;
+    const num = u.bpm == null ? '<span class="num none">–</span>' : `<span class="num">${u.bpm.toFixed(0)}</span>`;
+    const who = u.speaker === 'subject' ? 'Subject' : u.speaker === 'off' ? 'Off camera' : u.speaker === 'pending' ? 'pending' : 'unclear';
+    let cells = '', chips = [];
+    if (u.speaker === 'subject') {
+      cells = MEASURES.map(m => {
+        const v = u[m.k], z = u.z[m.k], st = stats[m.k];
+        let tip = m.name + ': ' + (v == null ? 'no data' : m.fmt(v));
+        if (v != null && st) tip += ' (baseline ' + m.fmt(st.mean) + (z != null ? ', ' + (z >= 0 ? '+' : '') + z.toFixed(1) + ' sd' : '') + ')';
+        return `<i class="c ${zClass(z, m.dir)}" title="${esc(tip)}"></i>`;
+      }).join('');
+      const scored = MEASURES.filter(m => u.z[m.k] != null && (m.dir ? u.z[m.k] >= 1 : Math.abs(u.z[m.k]) >= 1)).sort((a, b) => Math.abs(u.z[b.k]) - Math.abs(u.z[a.k]));
+      for (const f of u.flags) chips.push(`<span class="chip flag" title="Shares most of its words with the line at ${fmtTime(utts[f].start)} but disagrees with it">conflicts with ${fmtTime(utts[f].start)}</span>`);
+      for (const m of scored) chips.push(`<span class="chip hot" title="${esc(m.name + ' ' + (u.z[m.k] >= 0 ? '+' : '') + u.z[m.k].toFixed(1) + ' sd from baseline')}">${esc(chipFor(m, u))}</span>`);
+      if (u.hedges) chips.push(`<span class="chip">hedges ×${u.hedges}</span>`);
+      if (u.honest) chips.push(`<span class="chip">insists honest</span>`);
+      if (u.recall) chips.push(`<span class="chip">recall gap${u.recall > 1 ? ' ×' + u.recall : ''}</span>`);
+      if (u.echo) chips.push(`<span class="chip">echoes question</span>`);
+      if (u.nonanswer) chips.push(`<span class="chip">deflects</span>`);
+      if (u.z.i1 != null && u.z.i1 <= -1 && u.n >= 8) chips.push(`<span class="chip" title="First-person pronouns ${u.i1.toFixed(0)}% of words, against ${stats.i1.mean.toFixed(0)}% in the control answers">fewer "I"</span>`);
+      if (u.z.p3 != null && u.z.p3 >= 1 && u.n >= 8) chips.push(`<span class="chip" title="Third-person pronouns ${u.p3.toFixed(0)}% of words, against ${stats.p3.mean.toFixed(0)}% in the control answers">more "they"</span>`);
+    }
+    const more = chips.length > 5 ? `<span class="chip" title="${esc(chips.slice(5).map(c => c.replace(/<[^>]+>/g, '')).join(', '))}">+${chips.length - 5}</span>` : '';
+    chips = chips.slice(0, 5); if (more) chips.push(more);
+    const loadHtml = u.speaker === 'subject' ? `<span class="load${u.load == null ? ' none' : ''}" title="Overall load: mean of the measures' distance above baseline, in standard deviations">${u.load == null ? '–' : u.load.toFixed(1)}</span><span class="grid">${cells}</span>` : '';
+    const wordsHtml = u.words.map((w, k) => `<span class="w" data-w="${u.first + k}">${esc(w.text)}</span>`).join(' ');
+    row.innerHTML = `<div class="strip"><div class="bar" title="${u.bpm == null ? 'Not enough face data' : u.bpm.toFixed(1) + ' blinks per minute around this line'}">${num}<span class="track"><i class="fill" style="width:${bpmPct}%"></i>${above}${baseTick}</span></div>${loadHtml ? '<div class="cells">' + loadHtml + '</div>' : ''}</div>
+      <div class="meta"><span class="time">${fmtTime(u.start)}</span><span class="who">${who}</span>${u.speaker === 'subject' ? `<button class="ctl${isCtl ? ' on' : ''}" type="button" title="Use this answer as part of the baseline">control</button>` : ''}</div>
+      <div class="text">${wordsHtml}${chips.length ? '<span class="chips">' + chips.join('') + '</span>' : ''}</div>`;
+    row.addEventListener('click', e => { if (e.target.closest('.ctl')) return; if (state.running) return; seekTo(Math.max(0, u.start - 0.2)); video.play().catch(() => {}); });
+    const ctlBtn = row.querySelector('.ctl'); if (ctlBtn) ctlBtn.addEventListener('click', e => { e.stopPropagation(); if (!state.running) toggleControl(u); });
+    rows.push(row); frag.appendChild(row);
+    row.querySelectorAll('.w').forEach(sp => { wordEls[Number(sp.dataset.w)] = sp; });
+  });
+  els.transcript.innerHTML = ''; els.transcript.appendChild(frag);
+  state.rowEls = rows; state.wordEls = wordEls; state.currentRow = -1; state.currentWord = -1;
+  syncPlayhead(nowT(), false);
+  if (state.isLive && state.running && rows.length) rows[rows.length - 1].scrollIntoView({ block: 'end' });
+}
+function renderFlags() {
+  const fl = state.flagsList, utts = state.utterances;
+  els.flags.hidden = !fl.length; if (!fl.length) { els.flagList.innerHTML = ''; return; }
+  els.flagList.innerHTML = fl.map((f, i) => `<div class="flag"><span class="q" data-i="${f.a}"><span class="t">${fmtTime(utts[f.a].start)}</span>${esc(f.ta)}</span><span class="q" data-i="${f.b}"><span class="t">${fmtTime(utts[f.b].start)}</span>${esc(f.tb)}</span><span class="kind">${esc(f.kind)}</span></div>`).join('');
+  els.flagList.querySelectorAll('.q').forEach(q => q.addEventListener('click', () => { const u = utts[Number(q.dataset.i)]; if (u && !state.running) { seekTo(Math.max(0, u.start - 0.2)); video.play().catch(() => {}); } }));
+}
+
+function updateMetrics() {
+  els.mBlinks.textContent = state.blinks.length;
+  const r = rateAt(nowT());
+  els.mRate.innerHTML = (r == null ? '–' : r.toFixed(0)) + '<small>/min</small>';
+  els.mBase.innerHTML = (state.baseline == null ? '–' : state.baseline.toFixed(0)) + '<small>/min</small>';
+  els.mBaseLabel.textContent = state.baselineSource === 'control' ? 'baseline (control answers)' : state.baselineSource === 'median' ? 'baseline (median, too little control)' : 'baseline';
+  els.mSpeak.innerHTML = (state.speakBpm == null ? '–' : state.speakBpm.toFixed(0)) + '<small>/min</small>';
+  els.mListen.innerHTML = (state.listenBpm == null ? '–' : state.listenBpm.toFixed(0)) + '<small>/min</small>';
+  els.mFace.innerHTML = (state.frames ? Math.round(100 * state.faceFrames / state.frames) : '–') + '<small>%</small>';
+  if (state.running && state.fps) els.sFace.textContent = 'tracking at ' + state.fps.toFixed(0) + ' fps';
+}
+
+/* ---------- rendering: timeline ---------- */
+function totalDur() { return Math.max(state.duration, state.analysedUntil, 1); }
+function viewWindow() {
+  const dur = totalDur(), z = els.zoom.value;
+  if (z === 'all') return [0, dur];
+  if (state.dragView) return state.dragView;
+  const L = Math.min(dur, Number(z)), t = nowT();
+  const s = clamp(t - L * 0.35, 0, Math.max(0, dur - L));
+  return [s, s + L];
+}
+function stripAlpha(z) { return z == null || z < 0.25 ? 0 : clamp((z - 0.25) / 2.25, 0, 1); }
+function drawTimeline() {
+  const c = els.timeline, dpr = window.devicePixelRatio || 1, W = c.clientWidth || 600, H = c.clientHeight || 210;
+  if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+  const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+  const { padL, padR } = TL, top = 8, axisH = 16, stripH = 7, stripGap = 3, strips = ['eyes down', 'eye motion', 'pitch', 'load'];
+  const stripsH = strips.length * (stripH + stripGap), bandH = 6, tickH = 8;
+  const plotH = Math.max(40, H - top - axisH - stripsH - bandH - tickH - 12);
+  const [v0, v1] = viewWindow(), L = v1 - v0, dur = totalDur();
+  const x = t => padL + ((t - v0) / L) * (W - padL - padR), y = v => top + plotH - (clamp(v, 0, state.yMax) / state.yMax) * plotH;
+  ctx.font = '11px "IBM Plex Sans", sans-serif'; ctx.fillStyle = '#8e8c87'; ctx.textBaseline = 'middle';
+  const stepV = state.yMax > 60 ? 20 : 10;
+  for (let v = 0; v <= state.yMax; v += stepV) { ctx.strokeStyle = v ? '#e2dfd8' : '#c9c6bf'; ctx.beginPath(); ctx.moveTo(padL, y(v)); ctx.lineTo(W - padR, y(v)); ctx.stroke(); ctx.textAlign = 'right'; ctx.fillText(String(v), padL - 6, y(v)); }
+  const bandY = top + plotH + 4, tickY = bandY + bandH + 2, stripY0 = tickY + tickH + 4;
+  ctx.font = '9px "IBM Plex Sans", sans-serif'; ctx.textAlign = 'right';
+  strips.forEach((name, k) => ctx.fillText(name, padL - 6, stripY0 + k * (stripH + stripGap) + stripH / 2));
+  ctx.save(); ctx.beginPath(); ctx.rect(padL, 0, W - padL - padR, H); ctx.clip();
+  // subject speaking bands, voice and load strips (per line)
+  const vz = state.baseStats.f0;
+  for (const u of state.utterances) {
+    if (u.speaker !== 'subject') continue;
+    if (u.end < v0 || u.start > v1) continue;
+    const xa = x(u.start), xw = Math.max(1, x(u.end) - xa);
+    ctx.fillStyle = '#dcdad4'; ctx.fillRect(xa, bandY, xw, bandH);
+    const zf = u.z && u.z.f0 != null ? u.z.f0 : null;
+    if (u.f0 != null) { const a = stripAlpha(zf); ctx.fillStyle = a ? `rgba(200,100,10,${0.15 + 0.85 * a})` : '#e6e3dc'; ctx.fillRect(xa, stripY0 + 2 * (stripH + stripGap), xw, stripH); }
+    if (u.load != null) { const a = clamp((u.load - 0.3) / 1.7, 0, 1); ctx.fillStyle = a ? `rgba(200,100,10,${0.15 + 0.85 * a})` : '#e6e3dc'; ctx.fillRect(xa, stripY0 + 3 * (stripH + stripGap), xw, stripH); }
+  }
+  // frame-level strips
+  const i0 = Math.max(0, Math.floor(v0 / 0.5) - 1), i1 = Math.min(state.series.length - 1, Math.ceil(v1 / 0.5) + 1);
+  const cellW = Math.max(1, x(0.5) - x(0));
+  [['down', state.sDown, 0], ['gaze', state.sGaze, 1]].forEach(([k, ser, row]) => {
+    const st = state.stripStats[k]; if (!st) return;
+    const yy = stripY0 + row * (stripH + stripGap);
+    for (let i = i0; i <= i1; i++) { const p = ser[i]; if (!p || p.v == null) continue; const a = stripAlpha((p.v - st.mean) / st.sd); ctx.fillStyle = a ? `rgba(200,100,10,${0.15 + 0.85 * a})` : '#e6e3dc'; ctx.fillRect(x(p.t) - cellW / 2, yy, cellW + 0.5, stripH); }
+  });
+  // blink-rate area and line
+  if (state.series.length) {
+    const seg = []; let run = [];
+    for (let i = i0; i <= i1; i++) { const p = state.series[i]; if (!p || p.bpm == null) { if (run.length) seg.push(run); run = []; continue; } run.push(p); }
+    if (run.length) seg.push(run);
+    for (const s of seg) {
+      ctx.beginPath(); ctx.moveTo(x(s[0].t), y(0)); s.forEach(p => ctx.lineTo(x(p.t), y(p.bpm))); ctx.lineTo(x(s[s.length - 1].t), y(0)); ctx.closePath(); ctx.fillStyle = '#f4ddc3'; ctx.fill();
+      ctx.beginPath(); s.forEach((p, k) => k ? ctx.lineTo(x(p.t), y(p.bpm)) : ctx.moveTo(x(p.t), y(p.bpm))); ctx.strokeStyle = '#c8640a'; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+  }
+  if (state.baseline != null) { ctx.setLineDash([4, 3]); ctx.strokeStyle = '#5c5a56'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(padL, y(state.baseline)); ctx.lineTo(W - padR, y(state.baseline)); ctx.stroke(); ctx.setLineDash([]); }
+  // stretches with no analysed frames
+  for (const [a, b] of (state.gaps || [])) {
+    if (b < v0 || a > v1) continue;
+    const gx = x(a), gw = Math.max(2, x(b) - gx);
+    ctx.save(); ctx.beginPath(); ctx.rect(gx, top, gw, plotH); ctx.clip();
+    ctx.strokeStyle = '#b9b5ad'; ctx.lineWidth = 1; ctx.beginPath();
+    for (let k = -plotH; k < gw; k += 6) { ctx.moveTo(gx + k, top + plotH); ctx.lineTo(gx + k + plotH, top); }
+    ctx.stroke(); ctx.restore();
+  }
+  // the baseline mark
+  if (state.baselineEnd != null && state.baselineEnd >= v0 && state.baselineEnd <= v1) {
+    const mx = x(state.baselineEnd);
+    ctx.strokeStyle = '#161616'; ctx.lineWidth = 1; ctx.setLineDash([2, 2]); ctx.beginPath(); ctx.moveTo(mx, top); ctx.lineTo(mx, stripY0 + stripsH); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#161616'; ctx.font = '10px "IBM Plex Sans", sans-serif'; ctx.textBaseline = 'top'; ctx.textAlign = mx > W - 90 ? 'right' : 'left'; ctx.fillText('baseline ends', mx + (mx > W - 90 ? -4 : 4), top + 2);
+  }
+  // control spans
+  ctx.fillStyle = 'rgba(22,22,22,.06)';
+  for (const u of state.utterances) if (state.controlKeys.has(u.key) && u.end >= v0 && u.start <= v1) ctx.fillRect(x(u.start), top, Math.max(1, x(u.end) - x(u.start)), plotH);
+  // blinks
+  ctx.strokeStyle = '#161616'; ctx.lineWidth = 1;
+  const bt = state.blinks;
+  for (let i = lowerBound(bt.map(b => b.t), v0); i < bt.length && bt[i].t <= v1; i++) { const bx = x(bt[i].t); ctx.beginPath(); ctx.moveTo(bx, tickY); ctx.lineTo(bx, tickY + tickH); ctx.stroke(); }
+  if (state.analysedUntil > 0 && state.analysedUntil < dur - 0.5 && state.analysedUntil < v1) { ctx.fillStyle = 'rgba(235,233,228,.65)'; ctx.fillRect(x(state.analysedUntil), top, W - padR - x(state.analysedUntil), plotH); }
+  // hover
+  ctx.font = '11px "IBM Plex Sans", sans-serif';
+  if (state.hoverX != null && !state.dragging) {
+    const t = clamp(v0 + (state.hoverX - padL) / (W - padL - padR) * L, 0, dur), r = rateAt(t);
+    const di = clamp(Math.round(t / 0.5), 0, state.sDown.length - 1), d = state.sDown[di] ? state.sDown[di].v : null;
+    ctx.strokeStyle = '#8e8c87'; ctx.beginPath(); ctx.moveTo(x(t), top); ctx.lineTo(x(t), stripY0 + stripsH); ctx.stroke();
+    ctx.fillStyle = '#161616'; ctx.textAlign = x(t) > W - 150 ? 'right' : 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(fmtTime(t) + (r == null ? '' : '   ' + r.toFixed(0) + ' blinks/min') + (d == null ? '' : '   eyes down ' + d.toFixed(0) + '%'), x(t) + (x(t) > W - 150 ? -6 : 6), top);
+  }
+  // playhead
+  const pt = nowT(), ph = x(pt);
+  ctx.strokeStyle = '#161616'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(ph, top - 4); ctx.lineTo(ph, stripY0 + stripsH); ctx.stroke();
+  ctx.restore();
+  // time axis
+  ctx.fillStyle = '#8e8c87'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.font = '11px "IBM Plex Sans", sans-serif';
+  const tickEvery = L > 1800 ? 300 : L > 600 ? 120 : L > 240 ? 60 : L > 90 ? 30 : L > 40 ? 10 : 5;
+  const zoomed = els.zoom.value !== 'all';
+  for (let t = Math.ceil(v0 / tickEvery) * tickEvery; t <= v1 + 1e-6; t += tickEvery) { const tx = x(t); if (tx >= padL - 1 && tx <= W - padR - (zoomed ? 44 : -1)) ctx.fillText(fmtTime(t), tx, H - 4); }
+  if (zoomed) { ctx.textAlign = 'right'; ctx.fillText('of ' + fmtTime(dur), W - padR, H - 4); }
+}
+
+/* ---------- scrubbing ---------- */
+function seekTo(t, soft) {
+  const dur = totalDur(); t = clamp(t, 0, dur);
+  state.scrubT = soft ? t : null;
+  const now = performance.now();
+  if (!soft || now - state.lastSeekAt > 70) {
+    state.lastSeekAt = now;
+    try { if (soft && video.fastSeek) video.fastSeek(t); else video.currentTime = t; } catch (e) { video.currentTime = t; }
+  }
+  syncPlayhead(t, !soft); updateMetrics(); drawTimeline(); drawStoredOverlay(t);
+}
+function timeFromX(px) { const [v0, v1] = state.dragView || viewWindow(), W = els.timeline.clientWidth; return clamp(v0 + (px - TL.padL) / (W - TL.padL - TL.padR) * (v1 - v0), 0, totalDur()); }
+els.timeline.addEventListener('pointerdown', e => {
+  if (state.running || !state.file) return;
+  els.timeline.setPointerCapture(e.pointerId);
+  state.dragging = true; state.dragView = viewWindow();
+  seekTo(timeFromX(e.offsetX), true);
+});
+els.timeline.addEventListener('pointermove', e => {
+  if (state.dragging) { seekTo(timeFromX(e.offsetX), true); return; }
+  state.hoverX = e.offsetX; drawTimeline();
+});
+function endDrag() { if (!state.dragging) return; state.dragging = false; const t = state.scrubT; state.dragView = null; state.scrubT = null; if (t != null) seekTo(t, false); }
+els.timeline.addEventListener('pointerup', endDrag);
+els.timeline.addEventListener('pointercancel', endDrag);
+els.timeline.addEventListener('pointerleave', () => { state.hoverX = null; drawTimeline(); });
+document.addEventListener('keydown', e => {
+  const tag = (e.target && e.target.tagName || '').toLowerCase();
+  if (['input', 'select', 'textarea', 'button'].includes(tag) || !state.file) return;
+  if (e.key === 'b' || e.key === 'B') { e.preventDefault(); setBaselineMark(); return; }
+  if (state.running) return;
+  if (e.code === 'Space') { e.preventDefault(); if (video.paused) video.play().catch(() => {}); else video.pause(); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); seekTo(video.currentTime + (e.shiftKey ? 10 : 2) * (e.key === 'ArrowLeft' ? -1 : 1), false); }
+});
+
+/* ---------- playback sync ---------- */
+function syncPlayhead(t, scroll) {
+  const utts = state.utterances; if (!utts.length) return;
+  let lo = 0, hi = utts.length - 1, row = -1;
+  while (lo <= hi) { const mid = (lo + hi) >> 1; if (utts[mid].start <= t) { row = mid; lo = mid + 1; } else hi = mid - 1; }
+  if (row >= 0 && t > utts[row].end + 1.5) row = -1;
+  if (row !== state.currentRow) {
+    if (state.currentRow >= 0 && state.rowEls[state.currentRow]) state.rowEls[state.currentRow].classList.remove('current');
+    state.currentRow = row;
+    if (row >= 0 && state.rowEls[row]) { state.rowEls[row].classList.add('current'); if (scroll) state.rowEls[row].scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+  }
+  let w = -1;
+  if (row >= 0) { const u = utts[row]; for (let i = u.first; i <= u.last; i++) if (state.words[i].start <= t && t <= state.words[i].end + 0.15) { w = i; break; } }
+  if (w !== state.currentWord) {
+    if (state.currentWord >= 0 && state.wordEls[state.currentWord]) state.wordEls[state.currentWord].classList.remove('on');
+    state.currentWord = w; if (w >= 0 && state.wordEls[w]) state.wordEls[w].classList.add('on');
+  }
+}
+function playbackTick() {
+  if (!state.running) { fitOverlay(); syncPlayhead(video.currentTime, !video.paused); updateMetrics(); drawTimeline(); drawStoredOverlay(video.currentTime); }
+  if (!video.paused && !video.ended) requestAnimationFrame(playbackTick);
+}
+video.addEventListener('play', () => {
+  if (state.audioCtx && state.audioCtx.state !== 'running') state.audioCtx.resume().catch(() => {});
+  if (!state.running) requestAnimationFrame(playbackTick);
+});
+const onScrub = () => { if (!state.running && !state.dragging) { syncPlayhead(video.currentTime, true); updateMetrics(); drawTimeline(); drawStoredOverlay(video.currentTime); } };
+video.addEventListener('seeking', onScrub);
+video.addEventListener('seeked', onScrub);
+video.addEventListener('timeupdate', () => { if (!state.running && video.paused && !state.dragging) onScrub(); });
+video.addEventListener('pause', () => { if (!state.running) drawTimeline(); });
+document.addEventListener('visibilitychange', () => {
+  if (!state.running || !state.playStarted || video.ended) return;
+  if (document.visibilityState !== 'visible') {
+    if (state.isLive) { log('Page hidden at ' + fmtTime(state.analysedUntil) + '; live tracking continues on the background clock.'); return; }
+    if (!video.paused) { state.hiddenPause = true; video.pause(); log('Page hidden at ' + fmtTime(video.currentTime) + '; the pass is paused so nothing is skipped.'); }
+    return;
+  }
+  if (!video.paused) return;
+  log(state.hiddenPause ? 'Page visible again; resuming the pass.' : 'Playback was interrupted; resuming.'); state.hiddenPause = false;
+  video.play().catch(() => {
+    els.tap.hidden = false;
+    els.tap.onclick = () => { if (state.audioCtx) state.audioCtx.resume().catch(() => {}); video.play().then(() => { els.tap.hidden = true; }).catch(() => {}); };
+  });
+});
+
+/* ---------- export ---------- */
+function download(name, text, type) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function baseName() { return (state.file ? state.file.name.replace(/\.[^.]+$/, '') : 'interview') + '-analysis'; }
+const uttOut = u => ({ start: u.start, end: u.end, speaker: u.speaker, control: state.controlKeys.has(u.key), text: u.text, load: u.load,
+  blinksPerMin: u.bpm, ratioToBaseline: u.ratio, blinksDuring: u.blinksIn, eyesDownPct: u.down, eyesAsidePct: u.aside, eyeMovement: u.gaze, headMovement: u.head, facialTension: u.tense,
+  pitchHz: u.f0, pitchVariation: u.f0var, loudnessDb: u.db, wordsPerSecond: u.wps, fillers: u.fillers, pauses: u.pauses, hesitationPer10Words: u.hes, responseDelay: u.lat,
+  hedges: u.hedges, honestyPhrases: u.honest, recallGaps: u.recall, echoesQuestion: u.echo, deflects: u.nonanswer, firstPersonPct: u.i1, thirdPersonPct: u.p3, z: u.z, conflictsWith: u.flags.map(i => state.utterances[i].start) });
+els.json.addEventListener('click', () => {
+  const out = {
+    file: state.file && state.file.name, duration: state.duration, analysedAt: new Date().toISOString(),
+    settings: { baselineEnd: state.baselineEnd, subjectRegion: state.roi, model: modelId(), language: els.lang.value, blinkThreshold: Number(els.blinkThr.value), rateWindow: Number(els.rateWin.value), gazeThreshold: Number(els.gazeThr.value), lipThreshold: Number(els.lipThr.value), baseline: els.baseMode.value },
+    summary: { blinks: state.blinks.length, baselineBpm: state.baseline, baselineSource: state.baselineSource, speakingBpm: state.speakBpm, listeningBpm: state.listenBpm, faceCoverage: state.frames ? state.faceFrames / state.frames : null, baselineStats: state.baseStats },
+    blinks: state.blinks, longClosures: state.closures,
+    utterances: state.utterances.map(uttOut),
+    conflicts: state.flagsList.map(f => ({ a: state.utterances[f.a].start, b: state.utterances[f.b].start, textA: f.ta, textB: f.tb, kind: f.kind })),
+    words: state.words.map(w => ({ text: w.text, start: w.start, end: w.end, speaker: w.speaker, lipScore: w.lip })),
+    blinkRateSeries: state.series, eyesDownSeries: state.sDown, eyeMovementSeries: state.sGaze,
+    samples: state.samples.map(s => [Number(s.t.toFixed(3)), s.face ? 1 : 0, Number(s.blink.toFixed(3)), Number(s.lip.toFixed(4)), Number(s.nx.toFixed(4)), Number(s.ny.toFixed(4)), Number(s.gd.toFixed(3)), Number(s.gh.toFixed(3)), Number(s.ix.toFixed(4)), Number(s.iy.toFixed(4)), Number(s.ten.toFixed(3))]),
+    samplesColumns: ['time', 'faceFound', 'eyeClosure', 'lipGap', 'noseX', 'noseY', 'gazeDown', 'gazeAside', 'irisX', 'irisY', 'tension'],
+  };
+  download(baseName() + '.json', JSON.stringify(out), 'application/json');
+});
+els.csv.addEventListener('click', () => {
+  const q = s => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"', n = v => v == null ? '' : Number(v).toFixed(3);
+  const cols = ['start', 'end', 'speaker', 'control', 'load', 'blinks_per_min', 'ratio_to_baseline', 'blinks_during', 'eyes_down_pct', 'eyes_aside_pct', 'eye_movement', 'head_movement', 'facial_tension', 'pitch_hz', 'pitch_variation', 'loudness_db', 'words_per_second', 'fillers', 'pauses', 'hesitation_per_10_words', 'response_delay_s', 'hedges', 'honesty_phrases', 'recall_gaps', 'echoes_question', 'first_person_pct', 'third_person_pct', 'conflicts_with', 'text'];
+  const lines = [cols.join(',')];
+  for (const u of state.utterances) lines.push([n(u.start), n(u.end), u.speaker, state.controlKeys.has(u.key) ? 1 : 0, n(u.load), n(u.bpm), n(u.ratio), u.blinksIn, n(u.down), n(u.aside), n(u.gaze), n(u.head), n(u.tense), n(u.f0), n(u.f0var), n(u.db), n(u.wps), u.fillers, u.pauses, n(u.hes), n(u.lat), u.hedges, u.honest, u.recall, u.echo ? 1 : 0, n(u.i1), n(u.p3), q(u.flags.map(i => fmtTime(state.utterances[i].start)).join(' ')), q(u.text)].join(','));
+  download(baseName() + '.csv', lines.join('\n'), 'text/csv');
+});
+
+/* ---------- start ---------- */
+if (IS_MOBILE) { els.model.value = 'onnx-community/whisper-tiny.en_timestamped'; els.device.value = 'wasm'; }
+els.capture.disabled = !CAN_CAPTURE; els.camera.disabled = !CAN_CAMERA;
+{ const why = captureBlockReason(); if (why) log('Live capture is unlikely to work here: ' + why + '. ' + HOSTING_ADVICE, true); }
+drawTimeline();
+log(IS_MOBILE
+  ? 'Phone or tablet detected: using the tiny English model on the CPU and capturing audio during playback. Use camera runs a live analysis through the phone\u2019s camera and microphone. Change any of this in Settings.'
+  : 'Ready. Works best in Chrome or Edge on a desktop; the models download on first use.');
+</script>
+</body>
+</html>
