@@ -73,6 +73,7 @@ p{margin:0}
 .progress i{display:block;height:100%;background:var(--ink);width:0;transition:width .25s}
 .log{font-size:12px;color:var(--ink2);line-height:1.5;max-height:160px;overflow:auto;border-top:1px solid var(--line);padding-top:8px;white-space:pre-wrap;word-break:break-word;flex:none}
 .log .err{color:#a1260d}
+.log.full{max-height:none}
 .right{display:flex;flex-direction:column;min-width:0}
 .timeline{position:sticky;top:0;z-index:2;background:var(--bg);padding:14px 24px 8px;border-bottom:1px solid var(--line)}
 .timeline canvas{display:block;width:100%;height:210px;cursor:crosshair;touch-action:none;border-radius:2px}
@@ -298,6 +299,7 @@ p{margin:0}
       <div class="line"><span>Baseline</span><em id="sBase">not yet</em></div>
     </div>
     <div class="log" id="log"></div>
+    <div style="display:flex;gap:8px"><button class="btn ghost mini" id="btnSaveLog" type="button">Save log as a file</button><button class="btn ghost mini" id="btnCopyLog" type="button">Copy log</button><button class="btn ghost mini" id="btnExpandLog" type="button">Show whole log</button></div>
   </aside>
 
   <section class="right">
@@ -497,7 +499,8 @@ els.fileVideo.addEventListener('change', () => {
   video.src = URL.createObjectURL(f);
   video.muted = false; video.playbackRate = 1; video.controls = true;
   els.stageNote.hidden = true; els.analyse.disabled = false; $('#pick').hidden = false; updatePickButtons(); els.mark.disabled = false;
-  log('Loaded ' + f.name + ' (' + (f.size / 1048576).toFixed(1) + ' MB).');
+  log('Loaded ' + f.name + ' (' + (f.size / 1048576).toFixed(1) + ' MB' + (f.type ? ', ' + f.type : '') + ').');
+  if (f.type && video.canPlayType(f.type) === '') log('This browser says it may not be able to play "' + f.type + '" files. If the picture stays black, convert the video to MP4 (H.264 video, AAC audio); on a Mac, QuickTime Player can export it that way.');
 });
 video.addEventListener('loadedmetadata', () => {
   state.duration = isFinite(video.duration) ? video.duration : 0;
@@ -603,6 +606,7 @@ async function initFace() {
 function startPlayback() {
   state.playStarted = true;
   return video.play().catch(err => {
+    if (err && err.name !== 'NotAllowedError') throw new Error('the video could not be played (' + (err.name || 'error') + ': ' + (err.message || '') + '). ' + FORMAT_ADVICE);
     log('This device wants a tap before playback can begin (' + (err && err.name ? err.name : 'blocked') + ').');
     return new Promise(res => {
       els.tap.hidden = false;
@@ -734,6 +738,24 @@ function ingestFrame(t, res) {
     else state.closures.push({ t: state.closeStart, dur });
   }
 }
+
+/* ---------- media errors, reported plainly ---------- */
+const FORMAT_ADVICE = 'Chrome plays MP4 files with H.264 video and AAC audio reliably; HEVC .mov files from an iPhone depend on the machine. Convert the clip (QuickTime Player on a Mac: File, Export As), or set the iPhone camera to Most Compatible in Settings, Camera, Formats for future recordings.';
+video.addEventListener('error', () => {
+  const e = video.error; if (!e) return;
+  const why = { 1: 'loading was aborted', 2: 'a network error interrupted loading', 3: 'the file could not be decoded (the codec is not supported here)', 4: 'the file format is not supported by this browser' }[e.code] || 'unknown media error';
+  log('The video failed: ' + why + (e.message ? ' (' + e.message + ')' : '') + '. ' + FORMAT_ADVICE, true);
+  els.stageNote.textContent = 'This browser cannot play that file. See the log for what to do.'; els.stageNote.hidden = false;
+  if (state.running) { state.stopped = true; state.running = false; stopHeartbeat(); state.faceDone = true; state.asrDone = true; if (state.rebuildTimer) { clearInterval(state.rebuildTimer); state.rebuildTimer = null; } finalizeIfDone(); }
+});
+function logText() { return [...els.log.children].map(d => d.textContent).join('\n') + '\n' + navigator.userAgent + '\n' + (window.isSecureContext ? 'secure context' : 'not a secure context') + (window.self !== window.top ? ', embedded' : ''); }
+$('#btnSaveLog').addEventListener('click', () => { download('interview-analyser-log.txt', logText(), 'text/plain'); log('Log saved as a text file; attach it to the chat.'); });
+$('#btnExpandLog').addEventListener('click', e => { els.log.classList.toggle('full'); e.currentTarget.textContent = els.log.classList.contains('full') ? 'Shorten log' : 'Show whole log'; });
+$('#btnCopyLog').addEventListener('click', async () => {
+  const text = logText();
+  try { await navigator.clipboard.writeText(text); log('Log copied to the clipboard.'); }
+  catch (e) { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); log('Log copied.'); } catch (e2) { log('Could not copy automatically; select the log text by hand.'); } ta.remove(); }
+});
 
 /* ---------- where live capture cannot work, say why ---------- */
 const HOSTING_ADVICE = 'Open the file directly in Chrome on a computer, or put it at an https address of your own (your website, GitHub Pages, Netlify) and open that in Safari or Chrome; the camera then asks for permission in the normal way.';
