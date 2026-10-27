@@ -924,7 +924,7 @@ async function stopRecorderAndSwap() {
 }
 els.save.addEventListener('click', () => {
   if (!state.recBlob) return;
-  const a = document.createElement('a'); a.href = URL.createObjectURL(state.recBlob); a.download = state.file.name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  download(state.file.name, state.recBlob, state.recBlob.type);
 });
 
 /* ---------- subject picker: follow one face on a multi-person screen ---------- */
@@ -1983,8 +1983,18 @@ document.addEventListener('visibilitychange', () => {
 });
 
 /* ---------- export ---------- */
-function download(name, text, type) {
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+// On a phone the share sheet is the way to hand over a file; elsewhere an ordinary download.
+async function download(name, data, type) {
+  const blob = data instanceof Blob ? data : new Blob([data], { type });
+  if (IS_MOBILE && navigator.share && navigator.canShare) {
+    try {
+      const file = new File([blob], name, { type: blob.type || type || 'application/octet-stream' });
+      if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); log('Handed ' + name + ' to the share sheet.'); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; log('The share sheet declined (' + (e && e.message ? e.message : e) + '); trying a plain download.'); }
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.rel = 'noopener'; a.style.display = 'none';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
 }
 function baseName() { return (state.file ? state.file.name.replace(/\.[^.]+$/, '') : 'interview') + '-analysis'; }
 const uttOut = u => ({ start: u.start, end: u.end, speaker: u.speaker, control: state.controlKeys.has(u.key), text: u.text, load: u.load,
