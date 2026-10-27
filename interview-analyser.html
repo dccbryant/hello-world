@@ -380,8 +380,8 @@ self.onmessage = async (e) => {
       say('ready', { id: m.id, device: pipeDevice });
     } else if (m.type === 'transcribe') {
       await ensurePipeline(m.model, m.device);
-      const opts = { return_timestamps: 'word', task: 'transcribe' };
-      if (m.language && m.language !== 'auto' && !/\.en(_|-|$)/.test(m.model)) opts.language = m.language;
+      const opts = { return_timestamps: 'word' };
+      if (!/\.en(_|-|$)/.test(m.model)) { opts.task = 'transcribe'; if (m.language && m.language !== 'auto') opts.language = m.language; }
       let out;
       try {
         out = await pipe(m.audio, opts);
@@ -1308,8 +1308,8 @@ async function engineTranscribe(blk) {
   await engineLoad(model, device);
   const offset = blk.a / SR + (blk.origin || 0), seconds = (blk.b - blk.a) / SR;
   if (engine.mode === 'worker') return ask({ type: 'transcribe', audio: blk.audio, offset, seconds, model, device, language }, [blk.audio.buffer]);
-  const opts = { return_timestamps: 'word', task: 'transcribe' };
-  if (language && language !== 'auto' && !/\.en(_|-|$)/.test(model)) opts.language = language;
+  const opts = { return_timestamps: 'word' };
+  if (!/\.en(_|-|$)/.test(model)) { opts.task = 'transcribe'; if (language && language !== 'auto') opts.language = language; }
   let out;
   try { out = await engine.pipe(blk.audio, opts); }
   catch (e) { log('Word timing unavailable for this model, using phrase timing instead. (' + e.message + ')'); opts.return_timestamps = true; out = await engine.pipe(blk.audio, opts); }
